@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from googleapiclient.errors import HttpError
 import os
 from dotenv import load_dotenv
@@ -10,6 +11,10 @@ from services.youtube_service import YouTubeService
 load_dotenv()
 
 app = Flask(__name__)
+
+# Configure CORS
+CORS_ORIGIN = os.getenv('CORS_ORIGIN', 'http://localhost:3000')
+CORS(app, resources={r"/api/*": {"origins": CORS_ORIGIN}})
 
 # Get YouTube API key from environment variables
 YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
