@@ -4,63 +4,63 @@ from googleapiclient.errors import HttpError
 import os
 from dotenv import load_dotenv
 
-# Import services
+# サービスのインポート
 from services.youtube_service import YouTubeService
 from services.gemini_service import GeminiService
 from services.auth_service import initialize_firebase, auth_required
 
-# Load environment variables
+# 環境変数の読み込み
 load_dotenv()
 
 app = Flask(__name__)
 
-# Configure CORS
+# CORSの設定
 CORS_ORIGIN = os.getenv('CORS_ORIGIN', 'http://localhost:3000')
 CORS(app, resources={r"/api/*": {"origins": CORS_ORIGIN}})
 
-# Get YouTube API key from environment variables
+# 環境変数からYouTube APIキーを取得
 YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
 
-# Create service instances
+# サービスインスタンスの作成
 youtube_service = YouTubeService(YOUTUBE_API_KEY)
 gemini_service = GeminiService()
 
-# Initialize Firebase Admin SDK
+# Firebase Admin SDKの初期化
 firebase_initialized = initialize_firebase()
 if not firebase_initialized:
-    print("Warning: Firebase Admin SDK initialization failed")
+    print("警告: Firebase Admin SDKの初期化に失敗しました")
 
 
 @app.route('/api/search', methods=['POST'])
 @auth_required
 def search_videos():
     """
-    Search for YouTube videos based on a keyword.
+    キーワードに基づいてYouTubeビデオを検索します。
     
-    JSON body parameters:
-    - q: The search query (required)
-    - max_results: Maximum number of results to return (optional, default: 10)
-    - channel_id: Filter by channel ID (optional)
-    - published_after: Filter videos published after this date (optional, ISO 8601 format)
+    JSONボディパラメータ:
+    - q: 検索クエリ（必須）
+    - max_results: 返す結果の最大数（オプション、デフォルト: 10）
+    - channel_id: チャンネルIDでフィルタリング（オプション）
+    - published_after: この日付以降に公開されたビデオでフィルタリング（オプション、ISO 8601形式）
     
-    Returns:
-    - JSON response with video information
+    戻り値:
+    - ビデオ情報を含むJSONレスポンス
     """
-    # Get JSON data from request body
+    # リクエストボディからJSONデータを取得
     data = request.get_json()
     
-    # Extract parameters from JSON
+    # JSONからパラメータを抽出
     query = data.get('q')
     max_results = data.get('max_results', 10)
     channel_id = data.get('channel_id')
     published_after = data.get('published_after')
     
-    # Validate query parameter
+    # クエリパラメータの検証
     if not query:
-        return jsonify({'error': 'Missing query parameter (q)'}), 400
+        return jsonify({'error': 'クエリパラメータ(q)がありません'}), 400
     
     try:
-        # Use the service to search for videos
+        # サービスを使用してビデオを検索
         result = youtube_service.search_videos(
             query=query,
             max_results=max_results,
@@ -71,57 +71,57 @@ def search_videos():
         return jsonify(result)
     
     except HttpError as e:
-        return jsonify({'error': f'YouTube API error: {str(e)}'}), 500
+        return jsonify({'error': f'YouTube APIエラー: {str(e)}'}), 500
     except Exception as e:
-        return jsonify({'error': f'Server error: {str(e)}'}), 500
+        return jsonify({'error': f'サーバーエラー: {str(e)}'}), 500
 
 
 @app.route('/api/summarize', methods=['POST'])
 @auth_required
 def summarize_video():
     """
-    Generate a summary for a YouTube video using Vertex AI Gemini.
+    Vertex AI Geminiを使用してYouTubeビデオの要約を生成します。
     
-    JSON body parameters:
-    - video_id: The YouTube video ID (required)
+    JSONボディパラメータ:
+    - video_id: YouTubeビデオID（必須）
     
-    Returns:
-    - JSON response with summary information
+    戻り値:
+    - 要約情報を含むJSONレスポンス
     """
-    # Get JSON data from request body
+    # リクエストボディからJSONデータを取得
     data = request.get_json()
     
-    # Extract parameters from JSON
+    # JSONからパラメータを抽出
     video_id = data.get('video_id')
     
-    # Validate video_id parameter
+    # video_idパラメータの検証
     if not video_id:
-        return jsonify({'error': 'Missing video_id parameter'}), 400
+        return jsonify({'error': 'video_idパラメータがありません'}), 400
     
     try:
-        # Use the Gemini service to generate a summary
+        # Geminiサービスを使用して要約を生成
         result = gemini_service.generate_summary(video_id, youtube_service)
         
         return jsonify(result)
     
     except Exception as e:
-        return jsonify({'error': f'Summary generation error: {str(e)}'}), 500
+        return jsonify({'error': f'要約生成エラー: {str(e)}'}), 500
 
 
 @app.route('/api/auth/verify', methods=['POST'])
 @auth_required
 def verify_auth():
     """
-    Verify the authentication token and return user information.
-    This endpoint is protected by the auth_required decorator.
+    認証トークンを検証し、ユーザー情報を返します。
+    このエンドポイントはauth_requiredデコレータで保護されています。
     
-    Returns:
-    - JSON response with user information from the decoded token
+    戻り値:
+    - デコードされたトークンからのユーザー情報を含むJSONレスポンス
     """
-    # The auth_required decorator adds the decoded token to request.user
+    # auth_requiredデコレータがデコードされたトークンをrequest.userに追加します
     user_info = request.user
     
-    # Return user information
+    # ユーザー情報を返す
     return jsonify({
         'authenticated': True,
         'user': {
@@ -135,21 +135,21 @@ def verify_auth():
 
 @app.route('/')
 def index():
-    """Simple index route to verify the API is running."""
+    """APIが実行中であることを確認するための簡単なインデックスルート。"""
     return jsonify({
-        'message': 'YouTube Search and Summary API is running',
+        'message': 'YouTube検索と要約APIが実行中です',
         'endpoints': {
-            'search': '/api/search (POST with JSON body)',
-            'summarize': '/api/summarize (POST with JSON body)',
-            'auth_verify': '/api/auth/verify (POST with Authorization header)'
+            'search': '/api/search (JSONボディを持つPOST)',
+            'summarize': '/api/summarize (JSONボディを持つPOST)',
+            'auth_verify': '/api/auth/verify (Authorizationヘッダーを持つPOST)'
         }
     })
 
 
 if __name__ == '__main__':
-    # Check if API key is set
+    # APIキーが設定されているかチェック
     if not YOUTUBE_API_KEY:
-        print("Warning: YOUTUBE_API_KEY is not set in .env file")
+        print("警告: YOUTUBE_API_KEYが.envファイルに設定されていません")
     
-    # Run the Flask app
+    # Flaskアプリを実行
     app.run(debug=True)

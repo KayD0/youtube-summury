@@ -13,15 +13,15 @@ import authTest from "./views/auth-test.js";
 // Import Firebase services
 import { isAuthenticated } from "./services/firebase.js";
 
-// Routes configuration
+// ルート設定
 const routes = {
-    "/": { title: "Home", render: home },
-    "/about": { title: "About", render: about },
-    "/contact": { title: "Contact", render: contact },
-    "/login": { title: "Login", render: login, public: true },
-    "/register": { title: "Register", render: register, public: true },
-    "/profile": { title: "Profile", render: profile, protected: true },
-    "/auth-test": { title: "Auth Test", render: authTest, protected: true },
+    "/": { title: "ホーム", render: home },
+    "/about": { title: "このサイトについて", render: about },
+    "/contact": { title: "お問い合わせ", render: contact },
+    "/login": { title: "ログイン", render: login, public: true },
+    "/register": { title: "アカウント登録", render: register, public: true },
+    "/profile": { title: "プロフィール", render: profile, protected: true },
+    "/auth-test": { title: "認証テスト", render: authTest, protected: true },
 };
 
 // Router function
@@ -63,7 +63,7 @@ function updateActiveNavLink() {
     });
 }
 
-// Update authentication UI
+// 認証UIの更新
 function updateAuthUI() {
     const authenticated = isAuthenticated();
     const authNav = document.getElementById("authNav");
@@ -72,13 +72,13 @@ function updateAuthUI() {
         if (authenticated) {
             authNav.innerHTML = `
                 <li class="nav-item">
-                    <a class="nav-link" href="/profile" data-link>Profile</a>
+                    <a class="nav-link" href="/profile" data-link>プロフィール</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/auth-test" data-link>Auth Test</a>
+                    <a class="nav-link" href="/auth-test" data-link>認証テスト</a>
                 </li>
                 <li class="nav-item">
-                    <button class="btn btn-link nav-link" id="logoutBtn">Logout</button>
+                    <button class="btn btn-link nav-link" id="logoutBtn">ログアウト</button>
                 </li>
             `;
             
@@ -97,20 +97,20 @@ function updateAuthUI() {
                             const { error } = await signOut();
                             
                             if (!error) {
-                                // Redirect to home page on successful logout
+                                // ログアウト成功時にホームページにリダイレクト
                                 history.pushState("", "", "/");
                                 router();
                             } else {
-                                console.error("Logout error:", error);
-                                // Reset button state
+                                console.error("ログアウトエラー:", error);
+                                // ボタンの状態をリセット
                                 logoutBtn.disabled = false;
-                                logoutBtn.textContent = "Logout";
+                                logoutBtn.textContent = "ログアウト";
                             }
                         } catch (err) {
-                            console.error("Logout error:", err);
-                            // Reset button state
+                            console.error("ログアウトエラー:", err);
+                            // ボタンの状態をリセット
                             logoutBtn.disabled = false;
-                            logoutBtn.textContent = "Logout";
+                            logoutBtn.textContent = "ログアウト";
                         }
                     });
                 }
@@ -118,10 +118,10 @@ function updateAuthUI() {
         } else {
             authNav.innerHTML = `
                 <li class="nav-item">
-                    <a class="nav-link" href="/login" data-link>Login</a>
+                    <a class="nav-link" href="/login" data-link>ログイン</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/register" data-link>Register</a>
+                    <a class="nav-link" href="/register" data-link>登録</a>
                 </li>
             `;
         }

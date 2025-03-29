@@ -1,7 +1,7 @@
 import { searchVideos } from "../services/auth-api-service.js";
 import { isAuthenticated } from "../services/firebase.js";
 
-// YouTube Search Component
+// YouTube検索コンポーネント
 class YouTubeSearch extends HTMLElement {
     constructor() {
         super();
@@ -10,7 +10,7 @@ class YouTubeSearch extends HTMLElement {
     }
 
     connectedCallback() {
-        // Add event listeners after the component is connected to the DOM
+        // コンポーネントがDOMに接続された後にイベントリスナーを追加
         setTimeout(() => {
             this.setupEventListeners();
         }, 0);
@@ -21,25 +21,25 @@ class YouTubeSearch extends HTMLElement {
             <div class="youtube-search">
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">YouTube Video Search</h5>
+                        <h5 class="mb-0">YouTubeビデオ検索</h5>
                     </div>
                     <div class="card-body">
                         <form id="youtube-search-form">
                             <div class="row g-3">
                                 <div class="col-md-12">
-                                    <label for="search-query" class="form-label">Search Keyword <span class="text-danger">*</span></label>
+                                    <label for="search-query" class="form-label">検索キーワード <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="search-query" required>
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="published-after" class="form-label">Published After <span class="text-danger">*</span></label>
+                                    <label for="published-after" class="form-label">公開日（以降） <span class="text-danger">*</span></label>
                                     <input type="date" class="form-control" id="published-after" required>
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="channel-id" class="form-label">Channel ID (Optional)</label>
+                                    <label for="channel-id" class="form-label">チャンネルID（任意）</label>
                                     <input type="text" class="form-control" id="channel-id">
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="max-results" class="form-label">Max Results</label>
+                                    <label for="max-results" class="form-label">最大結果数</label>
                                     <select class="form-select" id="max-results">
                                         <option value="5">5</option>
                                         <option value="10" selected>10</option>
@@ -49,7 +49,7 @@ class YouTubeSearch extends HTMLElement {
                                 </div>
                                 <div class="col-md-12">
                                     <button type="submit" class="btn btn-primary" id="search-button">
-                                        <span id="search-button-text">Search Videos</span>
+                                        <span id="search-button-text">ビデオを検索</span>
                                         <span id="search-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                                     </button>
                                 </div>
@@ -60,16 +60,16 @@ class YouTubeSearch extends HTMLElement {
 
                 <div id="search-results" class="mt-4">
                     <div id="results-count" class="mb-3 d-none">
-                        <h5>Results: <span id="video-count">0</span> videos found</h5>
+                        <h5>結果: <span id="video-count">0</span> 件のビデオが見つかりました</h5>
                     </div>
                     <div id="videos-container" class="row row-cols-1 row-cols-md-2 g-4">
-                        <!-- Video cards will be inserted here -->
+                        <!-- ビデオカードがここに挿入されます -->
                     </div>
                     <div id="no-results" class="alert alert-info d-none">
-                        No videos found. Try a different search query.
+                        ビデオが見つかりませんでした。別の検索キーワードをお試しください。
                     </div>
                     <div id="error-message" class="alert alert-danger d-none">
-                        An error occurred while searching for videos.
+                        ビデオの検索中にエラーが発生しました。
                     </div>
                 </div>
             </div>
@@ -95,9 +95,9 @@ class YouTubeSearch extends HTMLElement {
     }
 
     async searchVideos() {
-        // Check if user is authenticated
+        // ユーザーが認証されているかチェック
         if (!isAuthenticated()) {
-            this.showError('You must be logged in to search videos');
+            this.showError('ビデオを検索するにはログインが必要です');
             return;
         }
 
@@ -106,36 +106,36 @@ class YouTubeSearch extends HTMLElement {
         const channelId = this.querySelector('#channel-id').value;
         const maxResults = this.querySelector('#max-results').value;
 
-        // Validate required fields
+        // 必須フィールドの検証
         if (!searchQuery || !publishedAfter) {
             return;
         }
 
-        // Convert date to ISO 8601 format
+        // 日付をISO 8601形式に変換
         const publishedAfterISO = new Date(publishedAfter).toISOString();
 
-        // Show loading state
+        // ローディング状態を表示
         this.setLoadingState(true);
 
         try {
-            // Prepare request data
+            // リクエストデータの準備
             const requestData = {
                 q: searchQuery,
                 published_after: publishedAfterISO,
                 max_results: parseInt(maxResults)
             };
 
-            // Add channel_id if provided
+            // channel_idが提供されている場合は追加
             if (channelId) {
                 requestData.channel_id = channelId;
             }
 
-            // Make API request using the service
+            // サービスを使用してAPIリクエストを行う
             const data = await searchVideos(requestData);
             this.videos = data.videos || [];
             this.displayResults();
         } catch (error) {
-            console.error('Error searching videos:', error);
+            console.error('ビデオ検索エラー:', error);
             this.showError(error.message);
         } finally {
             this.setLoadingState(false);
@@ -149,30 +149,30 @@ class YouTubeSearch extends HTMLElement {
         const videoCount = this.querySelector('#video-count');
         const errorMessage = this.querySelector('#error-message');
 
-        // Hide error message
+        // エラーメッセージを非表示
         errorMessage.classList.add('d-none');
 
-        // Clear previous results
+        // 以前の結果をクリア
         videosContainer.innerHTML = '';
 
         if (this.videos.length > 0) {
-            // Show results count
+            // 結果数を表示
             resultsCount.classList.remove('d-none');
             videoCount.textContent = this.videos.length;
             
-            // Hide no results message
+            // 結果なしメッセージを非表示
             noResults.classList.add('d-none');
 
-            // Create video cards
+            // ビデオカードを作成
             this.videos.forEach(video => {
                 const videoCard = this.createVideoCard(video);
                 videosContainer.appendChild(videoCard);
             });
         } else {
-            // Hide results count
+            // 結果数を非表示
             resultsCount.classList.add('d-none');
             
-            // Show no results message
+            // 結果なしメッセージを表示
             noResults.classList.remove('d-none');
         }
     }
@@ -191,7 +191,7 @@ class YouTubeSearch extends HTMLElement {
                     </p>
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="btn-group">
-                            <a href="${video.url}" target="_blank" class="btn btn-sm btn-outline-primary">Watch on YouTube</a>
+                            <a href="${video.url}" target="_blank" class="btn btn-sm btn-outline-primary">YouTubeで視聴</a>
                         </div>
                         <small class="text-muted">
                             <i class="bi bi-eye"></i> ${this.formatCount(video.view_count)}
@@ -211,11 +211,11 @@ class YouTubeSearch extends HTMLElement {
 
         if (isLoading) {
             searchButton.disabled = true;
-            searchButtonText.textContent = 'Searching...';
+            searchButtonText.textContent = '検索中...';
             searchSpinner.classList.remove('d-none');
         } else {
             searchButton.disabled = false;
-            searchButtonText.textContent = 'Search Videos';
+            searchButtonText.textContent = 'ビデオを検索';
             searchSpinner.classList.add('d-none');
         }
     }
@@ -225,13 +225,13 @@ class YouTubeSearch extends HTMLElement {
         const resultsCount = this.querySelector('#results-count');
         const noResults = this.querySelector('#no-results');
 
-        errorMessage.textContent = `Error: ${message}`;
+        errorMessage.textContent = `エラー: ${message}`;
         errorMessage.classList.remove('d-none');
         resultsCount.classList.add('d-none');
         noResults.classList.add('d-none');
     }
 
-    // Helper methods
+    // ヘルパーメソッド
     truncateText(text, maxLength) {
         if (text.length <= maxLength) return text;
         return text.substring(0, maxLength) + '...';
@@ -249,9 +249,9 @@ class YouTubeSearch extends HTMLElement {
         if (isNaN(num)) return count;
         
         if (num >= 1000000) {
-            return (num / 1000000).toFixed(1) + 'M';
+            return (num / 1000000).toFixed(1) + '万';
         } else if (num >= 1000) {
-            return (num / 1000).toFixed(1) + 'K';
+            return (num / 1000).toFixed(1) + '千';
         }
         return num.toString();
     }

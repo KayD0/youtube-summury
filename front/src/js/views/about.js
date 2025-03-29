@@ -1,14 +1,14 @@
 export default () => /*html*/`
     <div class="card">
         <div class="card-body">
-            <h1 class="card-title">About</h1>
-            <p class="card-text">Lorem, ipsum dolor sit amet consectetur adipisicing elit.</p>
+            <h1 class="card-title">このサイトについて</h1>
+            <p class="card-text">YouTubeビデオの検索と要約を行うためのツールを提供しています。</p>
             
             <div class="alert alert-info mt-4">
-                <h4 class="alert-heading">About this project</h4>
-                <p>This is a simple vanilla JavaScript SPA enhanced with Bootstrap 5.</p>
+                <h4 class="alert-heading">プロジェクトについて</h4>
+                <p>このプロジェクトはBootstrap 5で強化されたシンプルなバニラJavaScript SPAです。</p>
                 <hr>
-                <p class="mb-0">The project demonstrates how to integrate Bootstrap with a vanilla JavaScript application.</p>
+                <p class="mb-0">Firebase認証を使用してバックエンドAPIを保護し、安全なユーザー体験を提供します。</p>
             </div>
         </div>
     </div>

@@ -1,62 +1,61 @@
 /**
- * Authentication API Service
+ * 認証APIサービス
  * 
- * This service handles authentication token management for API requests.
- * It works with Firebase Authentication to get ID tokens and includes them
- * in API requests.
+ * このサービスはAPIリクエスト用の認証トークン管理を処理します。
+ * Firebase認証と連携してIDトークンを取得し、APIリクエストに含めます。
  */
 
 import { getAuth } from 'firebase/auth';
 import { getCurrentUser } from './firebase';
 
-// Get the API base URL from environment variables
+// 環境変数からAPIベースURLを取得
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 /**
- * Get the current user's ID token
+ * 現在のユーザーのIDトークンを取得
  * 
- * @returns {Promise<string|null>} The ID token or null if not authenticated
+ * @returns {Promise<string|null>} IDトークン、または認証されていない場合はnull
  */
 export async function getIdToken() {
   const currentUser = getCurrentUser();
   
   if (!currentUser) {
-    console.warn('No user is currently signed in');
+    console.warn('現在サインインしているユーザーはいません');
     return null;
   }
   
   try {
-    // Get a fresh token (force refresh = false by default)
+    // 新しいトークンを取得（デフォルトではforce refresh = false）
     const token = await currentUser.getIdToken();
     return token;
   } catch (error) {
-    console.error('Error getting ID token:', error);
+    console.error('IDトークン取得エラー:', error);
     return null;
   }
 }
 
 /**
- * Make an authenticated API request
+ * 認証されたAPIリクエストを行う
  * 
- * @param {string} endpoint - API endpoint (without base URL)
- * @param {Object} options - Fetch options
- * @returns {Promise<Response>} - Fetch response
+ * @param {string} endpoint - APIエンドポイント（ベースURLなし）
+ * @param {Object} options - Fetchオプション
+ * @returns {Promise<Response>} - Fetchレスポンス
  */
 export async function authenticatedFetch(endpoint, options = {}) {
-  // Get the ID token
+  // IDトークンを取得
   const token = await getIdToken();
   
   if (!token) {
-    throw new Error('Authentication required');
+    throw new Error('認証が必要です');
   }
   
-  // Add the token to the Authorization header
+  // トークンをAuthorizationヘッダーに追加
   const headers = {
     ...options.headers,
     'Authorization': `Bearer ${token}`
   };
   
-  // Make the request with the token
+  // トークン付きでリクエストを行う
   return fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers
@@ -64,9 +63,9 @@ export async function authenticatedFetch(endpoint, options = {}) {
 }
 
 /**
- * Verify the authentication token with the backend
+ * バックエンドで認証トークンを検証
  * 
- * @returns {Promise<Object>} - User information from the verified token
+ * @returns {Promise<Object>} - 検証されたトークンからのユーザー情報
  */
 export async function verifyAuth() {
   try {
@@ -79,25 +78,25 @@ export async function verifyAuth() {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `API error: ${response.status}`);
+      throw new Error(errorData.error || `APIエラー: ${response.status}`);
     }
     
     return await response.json();
   } catch (error) {
-    console.error('Auth verification error:', error);
+    console.error('認証検証エラー:', error);
     throw error;
   }
 }
 
 /**
- * Search for YouTube videos (authenticated version)
+ * YouTubeビデオを検索（認証バージョン）
  * 
- * @param {Object} params - Search parameters
- * @param {string} params.q - Search query
- * @param {string} params.published_after - Filter videos published after this date (ISO 8601 format)
- * @param {number} params.max_results - Maximum number of results to return
- * @param {string} params.channel_id - Filter by channel ID (optional)
- * @returns {Promise<Object>} - Search results
+ * @param {Object} params - 検索パラメータ
+ * @param {string} params.q - 検索クエリ
+ * @param {string} params.published_after - この日付以降に公開されたビデオでフィルタリング（ISO 8601形式）
+ * @param {number} params.max_results - 返す結果の最大数
+ * @param {string} params.channel_id - チャンネルIDでフィルタリング（オプション）
+ * @returns {Promise<Object>} - 検索結果
  */
 export async function searchVideos(params) {
   try {
@@ -111,21 +110,21 @@ export async function searchVideos(params) {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `API error: ${response.status}`);
+      throw new Error(errorData.error || `APIエラー: ${response.status}`);
     }
     
     return await response.json();
   } catch (error) {
-    console.error('Error searching videos:', error);
+    console.error('ビデオ検索エラー:', error);
     throw error;
   }
 }
 
 /**
- * Generate a summary for a YouTube video (authenticated version)
+ * YouTubeビデオの要約を生成（認証バージョン）
  * 
- * @param {string} videoId - YouTube video ID
- * @returns {Promise<Object>} - Summary data
+ * @param {string} videoId - YouTubeビデオID
+ * @returns {Promise<Object>} - 要約データ
  */
 export async function generateVideoSummary(videoId) {
   try {
@@ -139,12 +138,12 @@ export async function generateVideoSummary(videoId) {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `API error: ${response.status}`);
+      throw new Error(errorData.error || `APIエラー: ${response.status}`);
     }
     
     return await response.json();
   } catch (error) {
-    console.error('Error generating video summary:', error);
+    console.error('ビデオ要約生成エラー:', error);
     throw error;
   }
 }

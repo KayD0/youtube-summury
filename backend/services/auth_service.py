@@ -1,5 +1,5 @@
 """
-Firebase Authentication Service for verifying ID tokens
+Firebase認証サービス - IDトークンの検証用
 """
 import os
 import firebase_admin
@@ -7,13 +7,13 @@ from firebase_admin import credentials, auth
 from functools import wraps
 from flask import request, jsonify
 
-# Initialize Firebase Admin SDK
+# Firebase Admin SDKの初期化
 def initialize_firebase():
-    """Initialize Firebase Admin SDK with credentials from environment variables"""
+    """環境変数からの認証情報を使用してFirebase Admin SDKを初期化する"""
     try:
-        # Check if already initialized
+        # 既に初期化されているかチェック
         if not firebase_admin._apps:
-            # Try to use service account credentials from environment variables
+            # 環境変数からサービスアカウント認証情報を使用
             if os.getenv('FIREBASE_PROJECT_ID'):
                 cred_dict = {
                     "type": "service_account",
@@ -29,66 +29,66 @@ def initialize_firebase():
                 }
                 cred = credentials.Certificate(cred_dict)
                 firebase_admin.initialize_app(cred)
-                print("Firebase Admin SDK initialized with service account credentials")
+                print("Firebase Admin SDKがサービスアカウント認証情報で初期化されました")
             else:
-                # Use application default credentials if service account not provided
+                # サービスアカウントが提供されていない場合はアプリケーションのデフォルト認証情報を使用
                 firebase_admin.initialize_app()
-                print("Firebase Admin SDK initialized with application default credentials")
+                print("Firebase Admin SDKがアプリケーションのデフォルト認証情報で初期化されました")
         return True
     except Exception as e:
-        print(f"Error initializing Firebase Admin SDK: {str(e)}")
+        print(f"Firebase Admin SDKの初期化エラー: {str(e)}")
         return False
 
-# Decorator for routes that require authentication
+# 認証が必要なルートのためのデコレータ
 def auth_required(f):
     """
-    Decorator for Flask routes that require Firebase authentication.
-    Verifies the ID token in the Authorization header and adds the decoded token to the request.
+    Firebase認証を必要とするFlaskルートのためのデコレータ。
+    AuthorizationヘッダーのIDトークンを検証し、デコードされたトークンをリクエストに追加します。
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Get the auth token from the request header
+        # リクエストヘッダーから認証トークンを取得
         auth_header = request.headers.get('Authorization')
         if not auth_header:
-            return jsonify({'error': 'Authorization header is missing'}), 401
+            return jsonify({'error': 'Authorizationヘッダーがありません'}), 401
         
-        # Extract the token (remove 'Bearer ' prefix if present)
+        # トークンを抽出（'Bearer 'プレフィックスがある場合は削除）
         token = auth_header.replace('Bearer ', '') if auth_header.startswith('Bearer ') else auth_header
         
         try:
-            # Verify the token
+            # トークンを検証
             decoded_token = auth.verify_id_token(token)
             
-            # Add the decoded token to the request object
+            # デコードされたトークンをリクエストオブジェクトに追加
             request.user = decoded_token
             
-            # Continue with the route function
+            # ルート関数を続行
             return f(*args, **kwargs)
         except auth.InvalidIdTokenError:
-            return jsonify({'error': 'Invalid authentication token'}), 401
+            return jsonify({'error': '無効な認証トークンです'}), 401
         except auth.ExpiredIdTokenError:
-            return jsonify({'error': 'Expired authentication token'}), 401
+            return jsonify({'error': '期限切れの認証トークンです'}), 401
         except auth.RevokedIdTokenError:
-            return jsonify({'error': 'Revoked authentication token'}), 401
+            return jsonify({'error': '取り消された認証トークンです'}), 401
         except auth.CertificateFetchError:
-            return jsonify({'error': 'Error fetching certificates'}), 500
+            return jsonify({'error': '証明書の取得エラー'}), 500
         except Exception as e:
-            return jsonify({'error': f'Authentication error: {str(e)}'}), 500
+            return jsonify({'error': f'認証エラー: {str(e)}'}), 500
     
     return decorated_function
 
-# Function to verify a token without the decorator (for testing or custom handling)
+# デコレータなしでトークンを検証する関数（テストまたはカスタム処理用）
 def verify_token(token):
     """
-    Verify a Firebase ID token and return the decoded token if valid.
+    Firebase IDトークンを検証し、有効な場合はデコードされたトークンを返します。
     
-    Args:
-        token (str): The Firebase ID token to verify
+    引数:
+        token (str): 検証するFirebase IDトークン
         
-    Returns:
-        dict: The decoded token if valid
+    戻り値:
+        dict: 有効な場合のデコードされたトークン
         
-    Raises:
-        Various firebase_admin.auth exceptions if the token is invalid
+    例外:
+        トークンが無効な場合、様々なfirebase_admin.auth例外が発生します
     """
     return auth.verify_id_token(token)

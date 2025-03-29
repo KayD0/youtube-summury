@@ -1,7 +1,7 @@
 import { initAuthTest } from "../utils/auth-test.js";
 
 export default () => {
-    // Initialize the auth test utility after the view is rendered
+    // ビューがレンダリングされた後に認証テストユーティリティを初期化
     setTimeout(() => {
         initAuthTest();
     }, 0);
@@ -11,27 +11,27 @@ export default () => {
             <div class="col-12">
                 <div class="card">
                     <div class="card-body">
-                        <h1 class="card-title">Authentication Test</h1>
+                        <h1 class="card-title">認証テスト</h1>
                         <p class="card-text">
-                            This page allows you to test Firebase authentication with the backend.
-                            You can view your authentication status, get your ID token, and verify it with the backend.
+                            このページでは、Firebaseの認証をバックエンドでテストすることができます。
+                            認証状態の確認、IDトークンの取得、バックエンドでの検証が可能です。
                         </p>
                         <p class="card-text">
-                            <strong>How to use:</strong>
+                            <strong>使用方法:</strong>
                         </p>
                         <ol>
-                            <li>Sign in using the login page if you're not already authenticated</li>
-                            <li>View your authentication status and token below</li>
-                            <li>Click "Copy Full Token" to copy your ID token to the clipboard</li>
-                            <li>Click "Verify Token with Backend" to test the token verification with the backend</li>
+                            <li>まだ認証されていない場合は、ログインページからサインインしてください</li>
+                            <li>下記で認証状態とトークンを確認できます</li>
+                            <li>「完全なトークンをコピー」をクリックしてIDトークンをクリップボードにコピーします</li>
+                            <li>「バックエンドでトークンを検証」をクリックしてバックエンドでトークン検証をテストします</li>
                         </ol>
                         <p class="card-text">
-                            <strong>For backend testing:</strong>
+                            <strong>バックエンドテスト用:</strong>
                         </p>
                         <ol>
-                            <li>Copy your token using the button below</li>
-                            <li>Run the backend test script with your token:
-                                <code>python test_auth.py YOUR_TOKEN_HERE</code>
+                            <li>下のボタンを使用してトークンをコピーします</li>
+                            <li>バックエンドテストスクリプトをトークン付きで実行します:
+                                <code>python test_auth.py あなたのトークン</code>
                             </li>
                         </ol>
                     </div>
@@ -39,6 +39,6 @@ export default () => {
             </div>
         </div>
         
-        <!-- Auth status will be displayed here by the auth-test.js utility -->
+        <!-- 認証状態はauth-test.jsユーティリティによってここに表示されます -->
     `;
 };

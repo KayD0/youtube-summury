@@ -1,15 +1,15 @@
 /**
- * Utility for testing Firebase authentication with the backend
+ * Firebase認証をバックエンドでテストするためのユーティリティ
  * 
- * This file provides a simple way to get the current user's ID token
- * and test the backend authentication verification.
+ * このファイルは、現在のユーザーのIDトークンを取得し、
+ * バックエンドの認証検証をテストするための簡単な方法を提供します。
  */
 
 import { getIdToken, verifyAuth } from '../services/auth-api-service.js';
 import { getCurrentUser, isAuthenticated } from '../services/firebase.js';
 
 /**
- * Display the current authentication status and token
+ * 現在の認証状態とトークンを表示
  */
 export async function displayAuthStatus() {
     const authStatusDiv = document.createElement('div');
@@ -20,42 +20,42 @@ export async function displayAuthStatus() {
     
     let content = `
         <div class="card-header bg-${authenticated ? 'success' : 'danger'} text-white">
-            <h5 class="mb-0">Authentication Status</h5>
+            <h5 class="mb-0">認証状態</h5>
         </div>
         <div class="card-body">
-            <p><strong>Authenticated:</strong> ${authenticated ? 'Yes' : 'No'}</p>
+            <p><strong>認証済み:</strong> ${authenticated ? 'はい' : 'いいえ'}</p>
     `;
     
     if (authenticated && user) {
         const token = await getIdToken();
-        const tokenPreview = token ? `${token.substring(0, 20)}...` : 'Unable to get token';
+        const tokenPreview = token ? `${token.substring(0, 20)}...` : 'トークンを取得できません';
         
         content += `
-            <p><strong>User:</strong> ${user.email}</p>
+            <p><strong>ユーザー:</strong> ${user.email}</p>
             <p><strong>UID:</strong> ${user.uid}</p>
-            <p><strong>Token Preview:</strong> ${tokenPreview}</p>
+            <p><strong>トークンプレビュー:</strong> ${tokenPreview}</p>
             <div class="mb-3">
-                <button id="copy-token-btn" class="btn btn-sm btn-outline-primary">Copy Full Token</button>
-                <button id="verify-token-btn" class="btn btn-sm btn-outline-success">Verify Token with Backend</button>
+                <button id="copy-token-btn" class="btn btn-sm btn-outline-primary">完全なトークンをコピー</button>
+                <button id="verify-token-btn" class="btn btn-sm btn-outline-success">バックエンドでトークンを検証</button>
             </div>
             <div id="verification-result" class="alert alert-info d-none">
-                Verification result will appear here
+                検証結果がここに表示されます
             </div>
         `;
     } else {
         content += `
-            <p>Please sign in to get an authentication token.</p>
-            <a href="/login" class="btn btn-primary">Go to Login</a>
+            <p>認証トークンを取得するにはサインインしてください。</p>
+            <a href="/login" class="btn btn-primary">ログインへ</a>
         `;
     }
     
     content += `</div>`;
     authStatusDiv.innerHTML = content;
     
-    // Add to the DOM
+    // DOMに追加
     document.body.appendChild(authStatusDiv);
     
-    // Add event listeners
+    // イベントリスナーを追加
     if (authenticated && user) {
         const copyTokenBtn = authStatusDiv.querySelector('#copy-token-btn');
         const verifyTokenBtn = authStatusDiv.querySelector('#verify-token-btn');
@@ -66,16 +66,16 @@ export async function displayAuthStatus() {
             if (token) {
                 navigator.clipboard.writeText(token)
                     .then(() => {
-                        copyTokenBtn.textContent = 'Copied!';
+                        copyTokenBtn.textContent = 'コピーしました！';
                         setTimeout(() => {
-                            copyTokenBtn.textContent = 'Copy Full Token';
+                            copyTokenBtn.textContent = '完全なトークンをコピー';
                         }, 2000);
                     })
                     .catch(err => {
-                        console.error('Failed to copy token:', err);
-                        copyTokenBtn.textContent = 'Copy Failed';
+                        console.error('トークンのコピーに失敗:', err);
+                        copyTokenBtn.textContent = 'コピー失敗';
                         setTimeout(() => {
-                            copyTokenBtn.textContent = 'Copy Full Token';
+                            copyTokenBtn.textContent = '完全なトークンをコピー';
                         }, 2000);
                     });
             }
@@ -83,26 +83,26 @@ export async function displayAuthStatus() {
         
         verifyTokenBtn.addEventListener('click', async () => {
             verifyTokenBtn.disabled = true;
-            verifyTokenBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Verifying...';
+            verifyTokenBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 検証中...';
             verificationResult.classList.remove('d-none');
-            verificationResult.textContent = 'Verifying token with backend...';
+            verificationResult.textContent = 'バックエンドでトークンを検証中...';
             
             try {
                 const result = await verifyAuth();
                 verificationResult.className = 'alert alert-success';
                 verificationResult.innerHTML = `
-                    <strong>Verification Successful!</strong><br>
-                    User ID: ${result.user.uid}<br>
-                    Email: ${result.user.email}<br>
-                    Email Verified: ${result.user.email_verified ? 'Yes' : 'No'}<br>
-                    Auth Time: ${new Date(result.user.auth_time * 1000).toLocaleString()}
+                    <strong>検証成功！</strong><br>
+                    ユーザーID: ${result.user.uid}<br>
+                    メール: ${result.user.email}<br>
+                    メール確認済み: ${result.user.email_verified ? 'はい' : 'いいえ'}<br>
+                    認証時間: ${new Date(result.user.auth_time * 1000).toLocaleString()}
                 `;
             } catch (error) {
                 verificationResult.className = 'alert alert-danger';
-                verificationResult.textContent = `Verification Failed: ${error.message}`;
+                verificationResult.textContent = `検証失敗: ${error.message}`;
             } finally {
                 verifyTokenBtn.disabled = false;
-                verifyTokenBtn.textContent = 'Verify Token with Backend';
+                verifyTokenBtn.textContent = 'バックエンドでトークンを検証';
             }
         });
     }
@@ -111,26 +111,26 @@ export async function displayAuthStatus() {
 }
 
 /**
- * Initialize the auth test utility
+ * 認証テストユーティリティを初期化
  */
 export function initAuthTest() {
-    // Listen for auth state changes
+    // 認証状態の変更をリッスン
     window.addEventListener('authStateChanged', async () => {
-        // Remove any existing auth status display
+        // 既存の認証状態表示を削除
         const existingStatus = document.querySelector('.auth-status');
         if (existingStatus) {
             existingStatus.remove();
         }
         
-        // Display new auth status
+        // 新しい認証状態を表示
         await displayAuthStatus();
     });
     
-    // Initial display
+    // 初期表示
     displayAuthStatus();
 }
 
-// Auto-initialize if this script is loaded directly
+// このスクリプトが直接読み込まれた場合は自動初期化
 if (window.location.pathname === '/auth-test') {
     document.addEventListener('DOMContentLoaded', () => {
         initAuthTest();
