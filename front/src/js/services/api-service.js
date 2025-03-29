@@ -36,3 +36,31 @@ export async function searchVideos(params) {
         throw error;
     }
 }
+
+/**
+ * Generate a summary for a YouTube video
+ * 
+ * @param {string} videoId - YouTube video ID
+ * @returns {Promise<Object>} - Summary data
+ */
+export async function generateVideoSummary(videoId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/summarize`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ video_id: videoId })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `API error: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error generating video summary:', error);
+        throw error;
+    }
+}

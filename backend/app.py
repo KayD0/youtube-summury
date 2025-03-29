@@ -4,8 +4,9 @@ from googleapiclient.errors import HttpError
 import os
 from dotenv import load_dotenv
 
-# Import the YouTubeService from the services package
+# Import services
 from services.youtube_service import YouTubeService
+from services.gemini_service import GeminiService
 
 # Load environment variables
 load_dotenv()
@@ -19,8 +20,9 @@ CORS(app, resources={r"/api/*": {"origins": CORS_ORIGIN}})
 # Get YouTube API key from environment variables
 YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
 
-# Create YouTube service instance
+# Create service instances
 youtube_service = YouTubeService(YOUTUBE_API_KEY)
+gemini_service = GeminiService()
 
 
 @app.route('/api/search', methods=['POST'])
@@ -67,13 +69,45 @@ def search_videos():
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 
+@app.route('/api/summarize', methods=['POST'])
+def summarize_video():
+    """
+    Generate a summary for a YouTube video using Vertex AI Gemini.
+    
+    JSON body parameters:
+    - video_id: The YouTube video ID (required)
+    
+    Returns:
+    - JSON response with summary information
+    """
+    # Get JSON data from request body
+    data = request.get_json()
+    
+    # Extract parameters from JSON
+    video_id = data.get('video_id')
+    
+    # Validate video_id parameter
+    if not video_id:
+        return jsonify({'error': 'Missing video_id parameter'}), 400
+    
+    try:
+        # Use the Gemini service to generate a summary
+        result = gemini_service.generate_summary(video_id, youtube_service)
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        return jsonify({'error': f'Summary generation error: {str(e)}'}), 500
+
+
 @app.route('/')
 def index():
     """Simple index route to verify the API is running."""
     return jsonify({
-        'message': 'YouTube Search API is running',
+        'message': 'YouTube Search and Summary API is running',
         'endpoints': {
-            'search': '/api/search (POST with JSON body)'
+            'search': '/api/search (POST with JSON body)',
+            'summarize': '/api/summarize (POST with JSON body)'
         }
     })
 

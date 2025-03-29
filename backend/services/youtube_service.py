@@ -1,5 +1,7 @@
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
+import json
 
 
 class YouTubeService:
@@ -86,6 +88,75 @@ class YouTubeService:
             raise e
         except Exception as e:
             raise e
+    
+    def get_transcript(self, video_id, language_codes=None):
+        """
+        Get transcript for a YouTube video.
+        
+        Args:
+            video_id (str): The YouTube video ID
+            language_codes (list, optional): List of language codes to prioritize, e.g. ['ja', 'en']
+                                            If None, will try to get the default transcript
+        
+        Returns:
+            dict: {
+                'success': bool,
+                'transcript': str or None,
+                'language': str or None,
+                'error': str or None
+            }
+        """
+        try:
+            # If language_codes is not provided, get all available transcripts
+            if language_codes is None:
+                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+                
+                # Try to get the transcript in the original language first
+                try:
+                    transcript = transcript_list.find_transcript(['ja', 'en'])
+                except NoTranscriptFound:
+                    # If original language not found, get the first available transcript
+                    transcript = next(transcript_list._transcripts.values().__iter__())
+            else:
+                # Try to get transcript in one of the specified languages
+                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+                transcript = transcript_list.find_transcript(language_codes)
+            
+            # Get the transcript data
+            transcript_data = transcript.fetch()
+            
+            # Combine all transcript parts into a single string
+            full_transcript = ' '.join([item['text'] for item in transcript_data])
+            
+            return {
+                'success': True,
+                'transcript': full_transcript,
+                'language': transcript.language_code,
+                'error': None,
+                'raw_data': transcript_data  # Include raw data for more detailed processing if needed
+            }
+            
+        except TranscriptsDisabled:
+            return {
+                'success': False,
+                'transcript': None,
+                'language': None,
+                'error': 'Transcripts are disabled for this video'
+            }
+        except NoTranscriptFound:
+            return {
+                'success': False,
+                'transcript': None,
+                'language': None,
+                'error': 'No transcript found for the specified languages'
+            }
+        except Exception as e:
+            return {
+                'success': False,
+                'transcript': None,
+                'language': None,
+                'error': f'Error retrieving transcript: {str(e)}'
+            }
     
     def _get_video_details(self, video_id):
         """

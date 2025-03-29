@@ -1,3 +1,5 @@
+import { searchVideos } from "../services/api-service.js";
+
 // YouTube Search Component
 class YouTubeSearch extends HTMLElement {
     constructor() {
@@ -121,20 +123,8 @@ class YouTubeSearch extends HTMLElement {
                 requestData.channel_id = channelId;
             }
 
-            // Make API request
-            const response = await fetch('/api/search', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestData)
-            });
-
-            if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
-            }
-
-            const data = await response.json();
+            // Make API request using the service
+            const data = await searchVideos(requestData);
             this.videos = data.videos || [];
             this.displayResults();
         } catch (error) {
