@@ -8,6 +8,7 @@ import contact from "./views/contact.js";
 import login from "./views/login.js";
 import register from "./views/register.js";
 import profile from "./views/profile.js";
+import authTest from "./views/auth-test.js";
 
 // Import Firebase services
 import { isAuthenticated } from "./services/firebase.js";
@@ -20,6 +21,7 @@ const routes = {
     "/login": { title: "Login", render: login, public: true },
     "/register": { title: "Register", render: register, public: true },
     "/profile": { title: "Profile", render: profile, protected: true },
+    "/auth-test": { title: "Auth Test", render: authTest, protected: true },
 };
 
 // Router function
@@ -71,6 +73,9 @@ function updateAuthUI() {
             authNav.innerHTML = `
                 <li class="nav-item">
                     <a class="nav-link" href="/profile" data-link>Profile</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/auth-test" data-link>Auth Test</a>
                 </li>
                 <li class="nav-item">
                     <button class="btn btn-link nav-link" id="logoutBtn">Logout</button>

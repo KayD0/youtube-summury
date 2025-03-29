@@ -1,4 +1,5 @@
-import { generateVideoSummary } from "../services/api-service.js";
+import { generateVideoSummary } from "../services/auth-api-service.js";
+import { isAuthenticated } from "../services/firebase.js";
 
 // YouTube Summary Component
 class YouTubeSummary extends HTMLElement {
@@ -91,6 +92,12 @@ class YouTubeSummary extends HTMLElement {
     }
 
     async generateSummary() {
+        // Check if user is authenticated
+        if (!isAuthenticated()) {
+            this.showError('You must be logged in to generate a summary');
+            return;
+        }
+
         const videoIdInput = this.querySelector('#video-id').value.trim();
         
         // Validate input

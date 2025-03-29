@@ -1,4 +1,5 @@
-import { searchVideos } from "../services/api-service.js";
+import { searchVideos } from "../services/auth-api-service.js";
+import { isAuthenticated } from "../services/firebase.js";
 
 // YouTube Search Component
 class YouTubeSearch extends HTMLElement {
@@ -94,6 +95,12 @@ class YouTubeSearch extends HTMLElement {
     }
 
     async searchVideos() {
+        // Check if user is authenticated
+        if (!isAuthenticated()) {
+            this.showError('You must be logged in to search videos');
+            return;
+        }
+
         const searchQuery = this.querySelector('#search-query').value;
         const publishedAfter = this.querySelector('#published-after').value;
         const channelId = this.querySelector('#channel-id').value;

@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 # Import services
 from services.youtube_service import YouTubeService
 from services.gemini_service import GeminiService
+from services.auth_service import initialize_firebase, auth_required
 
 # Load environment variables
 load_dotenv()
@@ -24,8 +25,14 @@ YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
 youtube_service = YouTubeService(YOUTUBE_API_KEY)
 gemini_service = GeminiService()
 
+# Initialize Firebase Admin SDK
+firebase_initialized = initialize_firebase()
+if not firebase_initialized:
+    print("Warning: Firebase Admin SDK initialization failed")
+
 
 @app.route('/api/search', methods=['POST'])
+@auth_required
 def search_videos():
     """
     Search for YouTube videos based on a keyword.
@@ -70,6 +77,7 @@ def search_videos():
 
 
 @app.route('/api/summarize', methods=['POST'])
+@auth_required
 def summarize_video():
     """
     Generate a summary for a YouTube video using Vertex AI Gemini.
@@ -100,6 +108,31 @@ def summarize_video():
         return jsonify({'error': f'Summary generation error: {str(e)}'}), 500
 
 
+@app.route('/api/auth/verify', methods=['POST'])
+@auth_required
+def verify_auth():
+    """
+    Verify the authentication token and return user information.
+    This endpoint is protected by the auth_required decorator.
+    
+    Returns:
+    - JSON response with user information from the decoded token
+    """
+    # The auth_required decorator adds the decoded token to request.user
+    user_info = request.user
+    
+    # Return user information
+    return jsonify({
+        'authenticated': True,
+        'user': {
+            'uid': user_info.get('uid'),
+            'email': user_info.get('email'),
+            'email_verified': user_info.get('email_verified', False),
+            'auth_time': user_info.get('auth_time')
+        }
+    })
+
+
 @app.route('/')
 def index():
     """Simple index route to verify the API is running."""
@@ -107,7 +140,8 @@ def index():
         'message': 'YouTube Search and Summary API is running',
         'endpoints': {
             'search': '/api/search (POST with JSON body)',
-            'summarize': '/api/summarize (POST with JSON body)'
+            'summarize': '/api/summarize (POST with JSON body)',
+            'auth_verify': '/api/auth/verify (POST with Authorization header)'
         }
     })
 
