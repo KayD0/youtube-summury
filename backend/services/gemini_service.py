@@ -1,7 +1,4 @@
 import os
-from google.cloud import aiplatform
-from google.protobuf import json_format
-from google.protobuf.struct_pb2 import Value
 import json
 import requests
 from dotenv import load_dotenv
@@ -14,12 +11,9 @@ class GeminiService:
     
     def __init__(self):
         """Initialize the Gemini service with configuration from environment variables."""
-        self.project_id = os.getenv('GOOGLE_CLOUD_PROJECT')
-        self.location = os.getenv('GOOGLE_CLOUD_LOCATION', 'us-central1')
+        self.api_key = os.getenv('GEMINI_API_KEY')
         self.model_id = os.getenv('GEMINI_MODEL_ID', 'gemini-1.5-pro')
-        
-        # Initialize Vertex AI
-        aiplatform.init(project=self.project_id, location=self.location)
+        self.api_endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_id}:generateContent"
     
     def _get_transcript(self, video_id, youtube_service):
         """
@@ -91,20 +85,19 @@ class GeminiService:
             
             # Create a prompt for Gemini
             prompt = f"""
-            Please generate a concise summary of the following YouTube video transcript.
-            
-            Video Title: {video_details.get('title', 'Unknown')}
-            Video ID: {video_id}
-            
-            Transcript:
-            {transcript}
-            
-            Please provide:
-            1. A brief summary (2-3 sentences)
-            2. Key points (3-5 bullet points)
-            3. Main topics discussed
-            
-            Format the response as JSON with the following structure:
+            以下のYouTube動画のトランスクリプトに基づいて、簡潔な要約を生成してください。
+
+            - 動画タイトル: {video_details.get('title', '不明')}
+            - 動画ID: {video_id}
+
+            - トランスクリプト: {transcript}
+
+            以下を提供してください：
+            1. 簡潔な要約（2～3文）
+            2. 重要なポイント（3～5箇条書き）
+            3. 主な議論内容
+
+            以下のJSON形式で回答を記述してください：
             {{
                 "brief_summary": "...",
                 "key_points": ["...", "...", "..."],
@@ -112,23 +105,31 @@ class GeminiService:
             }}
             """
             
-            # Call Vertex AI Gemini model
-            endpoint = aiplatform.Endpoint(f"projects/{self.project_id}/locations/{self.location}/publishers/google/models/{self.model_id}")
-            
-            instances_json = json.dumps({
+            # Prepare request payload
+            payload = {
                 "contents": [
                     {
                         "role": "user",
                         "parts": [{"text": prompt}]
                     }
                 ]
-            })
-            instances = [json_format.ParseDict(json.loads(instances_json), Value())]
+            }
             
-            response = endpoint.predict(instances=instances)
+            # Make API request with API key authentication
+            response = requests.post(
+                f"{self.api_endpoint}?key={self.api_key}",
+                headers={"Content-Type": "application/json"},
+                json=payload
+            )
+            
+            # Check for errors
+            if response.status_code != 200:
+                error_message = response.json().get('error', {}).get('message', f"API error: {response.status_code}")
+                raise Exception(error_message)
             
             # Parse the response
-            response_text = response.predictions[0]["candidates"][0]["content"]["parts"][0]["text"]
+            response_data = response.json()
+            response_text = response_data["candidates"][0]["content"]["parts"][0]["text"]
             
             # Extract JSON from the response
             try:
