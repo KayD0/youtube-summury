@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
-from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 import os
 from dotenv import load_dotenv
+
+# Import the YouTubeService from the services package
+from services.youtube_service import YouTubeService
 
 # Load environment variables
 load_dotenv()
@@ -12,65 +14,53 @@ app = Flask(__name__)
 # Get YouTube API key from environment variables
 YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
 
-def get_youtube_service():
-    """Build and return a YouTube API service object."""
-    return build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
+# Create YouTube service instance
+youtube_service = YouTubeService(YOUTUBE_API_KEY)
 
-@app.route('/api/search', methods=['GET'])
+
+@app.route('/api/search', methods=['POST'])
 def search_videos():
     """
     Search for YouTube videos based on a keyword.
     
-    Query parameters:
+    JSON body parameters:
     - q: The search query (required)
     - max_results: Maximum number of results to return (optional, default: 10)
+    - channel_id: Filter by channel ID (optional)
+    - published_after: Filter videos published after this date (optional, ISO 8601 format)
     
     Returns:
     - JSON response with video information
     """
-    # Get query parameters
-    query = request.args.get('q')
-    max_results = request.args.get('max_results', default=10, type=int)
+    # Get JSON data from request body
+    data = request.get_json()
+    
+    # Extract parameters from JSON
+    query = data.get('q')
+    max_results = data.get('max_results', 10)
+    channel_id = data.get('channel_id')
+    published_after = data.get('published_after')
     
     # Validate query parameter
     if not query:
         return jsonify({'error': 'Missing query parameter (q)'}), 400
     
     try:
-        # Create YouTube API service
-        youtube = get_youtube_service()
+        # Use the service to search for videos
+        result = youtube_service.search_videos(
+            query=query,
+            max_results=max_results,
+            channel_id=channel_id,
+            published_after=published_after
+        )
         
-        # Call the search.list method to retrieve results
-        search_response = youtube.search().list(
-            q=query,
-            part='snippet',
-            maxResults=max_results,
-            type='video'
-        ).execute()
-        
-        # Extract relevant information from the response
-        videos = []
-        for item in search_response.get('items', []):
-            video = {
-                'id': item['id']['videoId'],
-                'title': item['snippet']['title'],
-                'description': item['snippet']['description'],
-                'thumbnail': item['snippet']['thumbnails']['medium']['url'],
-                'channel_title': item['snippet']['channelTitle'],
-                'published_at': item['snippet']['publishedAt']
-            }
-            videos.append(video)
-        
-        return jsonify({
-            'query': query,
-            'count': len(videos),
-            'videos': videos
-        })
+        return jsonify(result)
     
     except HttpError as e:
         return jsonify({'error': f'YouTube API error: {str(e)}'}), 500
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
+
 
 @app.route('/')
 def index():
@@ -78,9 +68,10 @@ def index():
     return jsonify({
         'message': 'YouTube Search API is running',
         'endpoints': {
-            'search': '/api/search?q=your_search_query'
+            'search': '/api/search (POST with JSON body)'
         }
     })
+
 
 if __name__ == '__main__':
     # Check if API key is set
