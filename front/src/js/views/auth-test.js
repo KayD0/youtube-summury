@@ -1,9 +1,17 @@
-import { initAuthTest } from "../utils/auth-test.js";
+import { displayAuthStatus } from "../utils/auth-test.js";
 
 export default () => {
-    // ビューがレンダリングされた後に認証テストユーティリティを初期化
+    // 認証状態を一度だけ表示するために、ビューがレンダリングされた後に一度だけ実行
+    let authStatusRendered = false;
+    
     setTimeout(() => {
-        initAuthTest();
+        if (!authStatusRendered) {
+            const authStatusContainer = document.getElementById('auth-status-container');
+            if (authStatusContainer) {
+                displayAuthStatus(authStatusContainer);
+                authStatusRendered = true;
+            }
+        }
     }, 0);
     
     return /*html*/`
@@ -39,6 +47,11 @@ export default () => {
             </div>
         </div>
         
-        <!-- 認証状態はauth-test.jsユーティリティによってここに表示されます -->
+        <!-- 認証状態を表示するための専用コンテナ -->
+        <div class="row">
+            <div class="col-12" id="auth-status-container">
+                <!-- 認証状態がここに表示されます -->
+            </div>
+        </div>
     `;
 };

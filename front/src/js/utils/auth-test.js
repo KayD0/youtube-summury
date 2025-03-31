@@ -10,8 +10,9 @@ import { getCurrentUser, isAuthenticated } from '../services/firebase.js';
 
 /**
  * 現在の認証状態とトークンを表示
+ * @param {HTMLElement} container - 認証状態を表示するコンテナ要素
  */
-export async function displayAuthStatus() {
+export async function displayAuthStatus(container = null) {
     const authStatusDiv = document.createElement('div');
     authStatusDiv.className = 'auth-status card mb-4';
     
@@ -52,8 +53,13 @@ export async function displayAuthStatus() {
     content += `</div>`;
     authStatusDiv.innerHTML = content;
     
-    // DOMに追加
-    document.body.appendChild(authStatusDiv);
+    // 指定されたコンテナに追加するか、コンテナがない場合はbodyに追加
+    if (container) {
+        container.innerHTML = ''; // コンテナの内容をクリア
+        container.appendChild(authStatusDiv);
+    } else {
+        document.body.appendChild(authStatusDiv);
+    }
     
     // イベントリスナーを追加
     if (authenticated && user) {
@@ -112,8 +118,11 @@ export async function displayAuthStatus() {
 
 /**
  * 認証テストユーティリティを初期化
+ * @deprecated 代わりにdisplayAuthStatus()を直接使用してください
  */
 export function initAuthTest() {
+    console.warn('initAuthTest()は非推奨です。代わりにdisplayAuthStatus()を直接使用してください。');
+    
     // 認証状態の変更をリッスン
     window.addEventListener('authStateChanged', async () => {
         // 既存の認証状態表示を削除
@@ -128,11 +137,4 @@ export function initAuthTest() {
     
     // 初期表示
     displayAuthStatus();
-}
-
-// このスクリプトが直接読み込まれた場合は自動初期化
-if (window.location.pathname === '/auth-test') {
-    document.addEventListener('DOMContentLoaded', () => {
-        initAuthTest();
-    });
 }
