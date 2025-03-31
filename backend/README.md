@@ -1,148 +1,190 @@
-# YouTube Search and Summary API
+# YouTube検索と要約API
 
-A Flask API that allows searching for YouTube videos using keywords and generating AI-powered summaries using Google's Vertex AI Gemini model.
+キーワードを使用してYouTubeビデオを検索し、GoogleのVertex AI Geminiモデルを使用してAI駆動の要約を生成するFlask APIです。
 
-## Setup
+## セットアップ
 
-### Prerequisites
+### 前提条件
 
-- Python 3.7 or higher
-- A Google API key with YouTube Data API v3 enabled
-- Google Cloud project with Vertex AI API enabled (for video summaries)
+- Python 3.7以上
+- YouTube Data API v3が有効なGoogle APIキー
+- Vertex AI APIが有効なGoogle Cloudプロジェクト（ビデオ要約用）
+- Firebase Admin SDK（認証用）
 
-### Installation
+### インストール
 
-1. Clone the repository
-2. Navigate to the backend directory
-3. Install the required dependencies:
+1. リポジトリをクローンします
+2. backendディレクトリに移動します
+3. 必要な依存関係をインストールします：
 
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Create a `.env` file based on the `.env.example` file:
+4. `.env.example`ファイルを基に`.env`ファイルを作成します：
 
 ```bash
 cp .env.example .env
 ```
 
-5. Edit the `.env` file and add your API keys and configuration:
+5. `.env`ファイルを編集し、APIキーと設定を追加します：
 
 ```
-# YouTube API credentials
-YOUTUBE_API_KEY=your_youtube_api_key_here
+# YouTube API認証情報
+YOUTUBE_API_KEY=あなたのyoutube_api_keyをここに
 
-# CORS settings
+# CORS設定
 CORS_ORIGIN=http://localhost:3000
 
-# Google Cloud settings
-GOOGLE_CLOUD_PROJECT=your_google_cloud_project_id
+# Google Cloud設定
+GOOGLE_CLOUD_PROJECT=あなたのgoogle_cloudプロジェクトID
 GOOGLE_CLOUD_LOCATION=us-central1
 GEMINI_MODEL_ID=gemini-1.5-pro
 
-# Set this environment variable to point to your Google Cloud credentials file
+# Google Cloud認証情報ファイルを指すように環境変数を設定
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/your/credentials.json
+
+# Firebase設定
+FIREBASE_PROJECT_ID=あなたのfirebaseプロジェクトID
+FIREBASE_PRIVATE_KEY_ID=あなたのprivate_key_id
+FIREBASE_PRIVATE_KEY=あなたのprivate_key
+FIREBASE_CLIENT_EMAIL=あなたのclient_email
+FIREBASE_CLIENT_ID=あなたのclient_id
+FIREBASE_AUTH_URI=https://accounts.google.com/o/oauth2/auth
+FIREBASE_TOKEN_URI=https://oauth2.googleapis.com/token
+FIREBASE_AUTH_PROVIDER_X509_CERT_URL=https://www.googleapis.com/oauth2/v1/certs
+FIREBASE_CLIENT_X509_CERT_URL=あなたのclient_x509_cert_url
 ```
 
-### Getting API Keys
+### APIキーの取得
 
-#### YouTube API Key
+#### YouTube APIキー
 
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the YouTube Data API v3
-4. Create credentials (API key)
-5. Copy the API key to your `.env` file
+1. [Google Cloud Console](https://console.cloud.google.com/)にアクセスします
+2. 新しいプロジェクトを作成するか、既存のプロジェクトを選択します
+3. YouTube Data API v3を有効にします
+4. 認証情報（APIキー）を作成します
+5. APIキーを`.env`ファイルにコピーします
 
-#### Google Cloud and Vertex AI Setup
+#### Google CloudとVertex AIのセットアップ
 
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the Vertex AI API
-4. Create a service account with appropriate permissions
-5. Download the service account key JSON file
-6. Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to this file
-7. Update your `.env` file with your Google Cloud project ID
+1. [Google Cloud Console](https://console.cloud.google.com/)にアクセスします
+2. 新しいプロジェクトを作成するか、既存のプロジェクトを選択します
+3. Vertex AI APIを有効にします
+4. 適切な権限を持つサービスアカウントを作成します
+5. サービスアカウントキーJSONファイルをダウンロードします
+6. `GOOGLE_APPLICATION_CREDENTIALS`環境変数をこのファイルを指すように設定します
+7. Google CloudプロジェクトIDで`.env`ファイルを更新します
 
-## Running the API
+#### Firebase認証のセットアップ
 
-Start the Flask development server:
+1. [Firebase Console](https://console.firebase.google.com/)にアクセスします
+2. 新しいプロジェクトを作成するか、既存のプロジェクトを選択します
+3. プロジェクト設定 > サービスアカウントに移動します
+4. 「新しい秘密鍵を生成」をクリックしてJSONファイルをダウンロードします
+5. JSONファイルの内容を`.env`ファイルの対応する変数に設定します
+
+## APIの実行
+
+Flask開発サーバーを起動します：
 
 ```bash
 python app.py
 ```
 
-The API will be available at `http://localhost:5000`.
+APIは`http://localhost:5000`で利用可能になります。
 
-## API Endpoints
+## APIエンドポイント
 
 ### GET /
 
-Returns a simple message to verify the API is running.
+APIが実行中であることを確認するための簡単なメッセージを返します。
 
-### POST /api/search
+### POST /api/auth/verify
 
-Search for YouTube videos based on a keyword.
+認証トークンを検証し、ユーザー情報を返します。
 
-Search for YouTube videos based on a keyword.
+#### リクエストヘッダー
 
-#### Request Body (JSON)
+```
+Authorization: Bearer <firebase_id_token>
+```
+
+#### レスポンス例
 
 ```json
 {
-  "q": "python tutorial",
+  "user": {
+    "uid": "user_id",
+    "email": "user@example.com",
+    "email_verified": true,
+    "auth_time": 1648123456
+  }
+}
+```
+
+### POST /api/search
+
+キーワードに基づいてYouTubeビデオを検索します。
+
+#### リクエストボディ（JSON）
+
+```json
+{
+  "q": "python チュートリアル",
   "max_results": 5,
   "channel_id": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
   "published_after": "2023-01-01T00:00:00Z"
 }
 ```
 
-- `q`: The search query (required)
-- `max_results`: Maximum number of results to return (optional, default: 10)
-- `channel_id`: Filter by channel ID (optional)
-- `published_after`: Filter videos published after this date (optional, ISO 8601 format)
+- `q`: 検索クエリ（必須）
+- `max_results`: 返す結果の最大数（オプション、デフォルト：10）
+- `channel_id`: チャンネルIDでフィルタリング（オプション）
+- `published_after`: この日付以降に公開されたビデオでフィルタリング（オプション、ISO 8601形式）
 
-#### Example Request
+#### リクエスト例
 
 ```
 POST /api/search
 Content-Type: application/json
+Authorization: Bearer <firebase_id_token>
 
 {
-  "q": "python tutorial",
+  "q": "python チュートリアル",
   "max_results": 5
 }
 ```
 
-#### Example Response
+#### レスポンス例
 
 ```json
 {
-  "query": "python tutorial",
+  "query": "python チュートリアル",
   "count": 5,
   "videos": [
     {
       "id": "video_id",
-      "title": "Python Tutorial for Beginners",
-      "description": "Learn Python programming in this comprehensive tutorial...",
+      "title": "Python初心者向けチュートリアル",
+      "description": "この包括的なチュートリアルでPythonプログラミングを学びましょう...",
       "thumbnail": "https://i.ytimg.com/vi/video_id/mqdefault.jpg",
-      "channel_title": "Programming Channel",
+      "channel_title": "プログラミングチャンネル",
       "published_at": "2023-01-01T00:00:00Z",
       "view_count": "1.2M",
       "like_count": "45K",
       "comment_count": "1.5K",
       "url": "https://www.youtube.com/watch?v=video_id"
     },
-    // More videos...
+    // その他のビデオ...
   ]
 }
 ```
 
 ### POST /api/summarize
 
-Generate a summary for a YouTube video using Vertex AI Gemini.
+Vertex AI Geminiを使用してYouTubeビデオの要約を生成します。
 
-#### Request Body (JSON)
+#### リクエストボディ（JSON）
 
 ```json
 {
@@ -150,47 +192,50 @@ Generate a summary for a YouTube video using Vertex AI Gemini.
 }
 ```
 
-- `video_id`: The YouTube video ID (required)
+- `video_id`: YouTubeビデオID（必須）
 
-#### Example Response
+#### レスポンス例
 
 ```json
 {
-  "brief_summary": "This video is a comprehensive tutorial on Python programming for beginners, covering basic syntax, data types, and control structures.",
+  "brief_summary": "このビデオは初心者向けのPythonプログラミングの包括的なチュートリアルで、基本的な構文、データ型、制御構造をカバーしています。",
   "key_points": [
-    "Python is a high-level, interpreted programming language",
-    "Variables don't need explicit type declarations",
-    "Python uses indentation for code blocks instead of braces",
-    "The language has a rich ecosystem of libraries and frameworks"
+    "Pythonは高水準のインタープリタ型プログラミング言語です",
+    "変数は明示的な型宣言が不要です",
+    "Pythonは中括弧の代わりにインデントを使用してコードブロックを表します",
+    "この言語にはライブラリとフレームワークの豊富なエコシステムがあります"
   ],
   "main_topics": [
-    "Python Basics",
-    "Data Types",
-    "Control Flow",
-    "Functions"
+    "Python基礎",
+    "データ型",
+    "制御フロー",
+    "関数"
   ],
   "video_id": "dQw4w9WgXcQ",
   "video_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 }
 ```
 
-## Error Handling
+## エラーハンドリング
 
-The API returns appropriate error messages and status codes:
+APIは適切なエラーメッセージとステータスコードを返します：
 
-- 400 Bad Request: Missing required parameters
-- 500 Internal Server Error: YouTube API errors, Vertex AI errors, or server errors
+- 400 Bad Request: 必須パラメータの欠落
+- 401 Unauthorized: 認証エラー
+- 403 Forbidden: 権限エラー
+- 500 Internal Server Error: YouTube APIエラー、Vertex AIエラー、またはサーバーエラー
 
-## Frontend Integration
+## フロントエンド連携
 
-This API is designed to work with the accompanying frontend application. The frontend includes:
+このAPIは付属のフロントエンドアプリケーションと連携するように設計されています。フロントエンドには以下が含まれます：
 
-1. A YouTube video search component that displays results in a card layout
-2. A video summary component that uses Vertex AI Gemini to generate summaries
+1. カードレイアウトで結果を表示するYouTubeビデオ検索コンポーネント
+2. Vertex AI Geminiを使用して要約を生成するビデオ要約コンポーネント
+3. Firebase認証を使用したユーザー認証システム
 
-To run the frontend:
+フロントエンドを実行するには：
 
-1. Navigate to the front directory
-2. Install dependencies: `npm install`
-3. Start the development server: `npm run dev`
-4. Access the application at `http://localhost:3000`
+1. frontディレクトリに移動します
+2. 依存関係をインストールします：`npm install`
+3. 開発サーバーを起動します：`npm run dev`
+4. `http://localhost:3000`でアプリケーションにアクセスします
