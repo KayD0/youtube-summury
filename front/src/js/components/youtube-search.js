@@ -92,6 +92,43 @@ class YouTubeSearch extends HTMLElement {
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             publishedAfterInput.valueAsDate = thirtyDaysAgo;
         }
+
+        // 検索結果コンテナに対してイベント委任を設定
+        const videosContainer = this.querySelector('#videos-container');
+        if (videosContainer) {
+            videosContainer.addEventListener('click', (e) => {
+                // 要約生成ボタンがクリックされたかチェック
+                if (e.target.classList.contains('generate-summary-btn')) {
+                    const videoId = e.target.dataset.videoId;
+                    if (videoId) {
+                        this.generateSummaryForVideo(videoId);
+                    }
+                }
+            });
+        }
+    }
+
+    generateSummaryForVideo(videoId) {
+        // YouTubeSummaryコンポーネントを取得
+        const summaryComponent = document.querySelector('youtube-summary');
+        if (summaryComponent) {
+            // ビデオIDを入力フィールドに設定
+            const videoIdInput = summaryComponent.querySelector('#video-id');
+            if (videoIdInput) {
+                videoIdInput.value = videoId;
+                
+                // 要約生成を実行
+                const summaryForm = summaryComponent.querySelector('#youtube-summary-form');
+                if (summaryForm) {
+                    // フォームのsubmitイベントを発火
+                    const submitEvent = new Event('submit', { cancelable: true });
+                    summaryForm.dispatchEvent(submitEvent);
+                    
+                    // 要約コンポーネントまでスクロール
+                    summaryComponent.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+        }
     }
 
     async searchVideos() {
@@ -192,6 +229,7 @@ class YouTubeSearch extends HTMLElement {
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="btn-group">
                             <a href="${video.url}" target="_blank" class="btn btn-sm btn-outline-primary">YouTubeで視聴</a>
+                            <button class="btn btn-sm btn-outline-success generate-summary-btn" data-video-id="${video.id}">要約生成</button>
                         </div>
                         <small class="text-muted">
                             <i class="bi bi-eye"></i> ${this.formatCount(video.view_count)}
