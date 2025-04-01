@@ -15,11 +15,13 @@ export default () => /*html*/`
     </div>
     
     <div class="row">
-        <div class="col-lg-6 mb-4">
+        <div class="col-12 mb-4">
             <youtube-search></youtube-search>
         </div>
-        <div class="col-lg-6 mb-4">
-            <youtube-summary></youtube-summary>
-        </div>
+    </div>
+    
+    <!-- 要約コンポーネントは非表示にしますが、APIコールのために残しておきます -->
+    <div class="d-none">
+        <youtube-summary></youtube-summary>
     </div>
 `;

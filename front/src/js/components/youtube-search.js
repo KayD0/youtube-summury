@@ -18,6 +18,23 @@ class YouTubeSearch extends HTMLElement {
 
     render() {
         this.innerHTML = /*html*/`
+            <style>
+                .expanded-card {
+                    transition: all 0.3s ease-in-out;
+                    order: -1; /* 拡大されたカードを最初に表示 */
+                }
+                
+                .expanded-card .card {
+                    border-color: #28a745;
+                    box-shadow: 0 0.5rem 1rem rgba(40, 167, 69, 0.15) !important;
+                }
+                
+                .summary-container {
+                    transition: all 0.3s ease-in-out;
+                    border-top: 1px solid rgba(0,0,0,.125);
+                    padding: 1rem;
+                }
+            </style>
             <div class="youtube-search">
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
@@ -62,7 +79,7 @@ class YouTubeSearch extends HTMLElement {
                     <div id="results-count" class="mb-3 d-none">
                         <h5>結果: <span id="video-count">0</span> 件のビデオが見つかりました</h5>
                     </div>
-                    <div id="videos-container" class="row row-cols-1 row-cols-md-2 g-4">
+                    <div id="videos-container" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
                         <!-- ビデオカードがここに挿入されます -->
                     </div>
                     <div id="no-results" class="alert alert-info d-none">
@@ -104,31 +121,126 @@ class YouTubeSearch extends HTMLElement {
                         this.generateSummaryForVideo(videoId);
                     }
                 }
+                
+                // 閉じるボタンがクリックされたかチェック
+                if (e.target.classList.contains('close-summary-btn') || e.target.closest('.close-summary-btn')) {
+                    const summaryContainer = e.target.closest('.summary-container');
+                    if (summaryContainer) {
+                        // 要約コンテナを非表示
+                        summaryContainer.classList.add('d-none');
+                        
+                        // カードの親要素（col）から全幅クラスを削除
+                        const cardCol = summaryContainer.closest('.col');
+                        if (cardCol) {
+                            cardCol.classList.remove('col-12', 'expanded-card');
+                        }
+                    }
+                }
             });
         }
     }
 
-    generateSummaryForVideo(videoId) {
-        // YouTubeSummaryコンポーネントを取得
-        const summaryComponent = document.querySelector('youtube-summary');
-        if (summaryComponent) {
-            // ビデオIDを入力フィールドに設定
-            const videoIdInput = summaryComponent.querySelector('#video-id');
-            if (videoIdInput) {
-                videoIdInput.value = videoId;
-                
-                // 要約生成を実行
-                const summaryForm = summaryComponent.querySelector('#youtube-summary-form');
-                if (summaryForm) {
-                    // フォームのsubmitイベントを発火
-                    const submitEvent = new Event('submit', { cancelable: true });
-                    summaryForm.dispatchEvent(submitEvent);
-                    
-                    // 要約コンポーネントまでスクロール
-                    summaryComponent.scrollIntoView({ behavior: 'smooth' });
-                }
-            }
+    async generateSummaryForVideo(videoId) {
+        // ユーザーが認証されているかチェック
+        if (!isAuthenticated()) {
+            alert('要約を生成するにはログインが必要です');
+            return;
         }
+        
+        // 要約コンテナを取得
+        const summaryContainer = this.querySelector(`.summary-container[data-video-id="${videoId}"]`);
+        if (!summaryContainer) return;
+        
+        // カードの親要素（col）を取得して全幅に拡大
+        const cardCol = summaryContainer.closest('.col');
+        if (cardCol) {
+            // 他のカードの全幅クラスを削除
+            const allCols = this.querySelectorAll('.col');
+            allCols.forEach(col => col.classList.remove('col-12', 'expanded-card'));
+            
+            // このカードを全幅に設定
+            cardCol.classList.add('col-12', 'expanded-card');
+        }
+        
+        // 要約コンテナを表示
+        summaryContainer.classList.remove('d-none');
+        
+        // ローディング表示
+        const loadingElement = summaryContainer.querySelector('.summary-loading');
+        const contentElement = summaryContainer.querySelector('.summary-content');
+        const errorElement = summaryContainer.querySelector('.summary-error');
+        
+        loadingElement.classList.remove('d-none');
+        contentElement.classList.add('d-none');
+        errorElement.classList.add('d-none');
+        
+        try {
+            // auth-api-serviceからインポート
+            const { generateVideoSummary } = await import("../services/auth-api-service.js");
+            
+            // 要約を生成
+            const summary = await generateVideoSummary(videoId);
+            
+            // 要約を表示
+            this.displaySummaryInCard(summaryContainer, summary);
+            
+            // 要約コンテナまでスクロール
+            summaryContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } catch (error) {
+            console.error('要約生成エラー:', error);
+            errorElement.textContent = `エラー: ${error.message || '要約の生成中にエラーが発生しました'}`;
+            errorElement.classList.remove('d-none');
+        } finally {
+            loadingElement.classList.add('d-none');
+        }
+    }
+    
+    displaySummaryInCard(container, summary) {
+        if (!summary) return;
+        
+        const contentElement = container.querySelector('.summary-content');
+        const briefSummary = container.querySelector('.brief-summary');
+        const keyPoints = container.querySelector('.key-points');
+        const mainTopics = container.querySelector('.main-topics');
+        
+        // 簡単な要約を設定
+        briefSummary.textContent = summary.brief_summary || '要約はありません';
+        
+        // 以前の重要ポイントをクリア
+        keyPoints.innerHTML = '';
+        
+        // 重要ポイントを追加
+        if (summary.key_points && summary.key_points.length > 0) {
+            summary.key_points.forEach(point => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+                li.textContent = point;
+                keyPoints.appendChild(li);
+            });
+        } else {
+            const li = document.createElement('li');
+            li.className = 'list-group-item';
+            li.textContent = '重要ポイントはありません';
+            keyPoints.appendChild(li);
+        }
+        
+        // 以前の主要トピックをクリア
+        mainTopics.innerHTML = '';
+        
+        // 主要トピックをバッジとして追加
+        if (summary.main_topics && summary.main_topics.length > 0) {
+            summary.main_topics.forEach(topic => {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-secondary me-2 mb-2';
+                badge.textContent = topic;
+                mainTopics.appendChild(badge);
+            });
+        } else {
+            mainTopics.textContent = '主要トピックはありません';
+        }
+        
+        // コンテンツを表示
+        contentElement.classList.remove('d-none');
     }
 
     async searchVideos() {
@@ -234,6 +346,38 @@ class YouTubeSearch extends HTMLElement {
                         <small class="text-muted">
                             <i class="bi bi-eye"></i> ${this.formatCount(video.view_count)}
                         </small>
+                    </div>
+                </div>
+                
+                <!-- 要約表示エリア -->
+                <div class="summary-container d-none" data-video-id="${video.id}">
+                    <div class="d-flex justify-content-end mb-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary close-summary-btn">
+                            <i class="bi bi-x"></i> 閉じる
+                        </button>
+                    </div>
+                    <div class="summary-loading text-center d-none">
+                        <div class="spinner-border spinner-border-sm text-success" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span class="ms-2">要約を生成中...</span>
+                    </div>
+                    <div class="summary-content d-none">
+                        <h6 class="card-subtitle mb-2 text-muted">簡単な要約</h6>
+                        <p class="brief-summary card-text"></p>
+                        
+                        <h6 class="card-subtitle mb-2 text-muted">重要ポイント</h6>
+                        <ul class="key-points list-group list-group-flush mb-2">
+                            <!-- 重要ポイントがここに挿入されます -->
+                        </ul>
+                        
+                        <h6 class="card-subtitle mb-2 text-muted">主要トピック</h6>
+                        <div class="main-topics mb-2">
+                            <!-- 主要トピックがバッジとしてここに挿入されます -->
+                        </div>
+                    </div>
+                    <div class="summary-error alert alert-danger mt-2 d-none">
+                        要約の生成中にエラーが発生しました。
                     </div>
                 </div>
             </div>
