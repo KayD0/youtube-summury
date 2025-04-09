@@ -92,3 +92,25 @@ def verify_token(token):
         トークンが無効な場合、様々なfirebase_admin.auth例外が発生します
     """
     return auth.verify_id_token(token)
+
+# リクエストからユーザーIDを取得する関数
+def get_user_id_from_token():
+    """
+    現在のリクエストのトークンからユーザーIDを取得します。
+    auth_requiredデコレータが適用されたルート内で使用することを想定しています。
+    
+    戻り値:
+        str: ユーザーID
+        
+    例外:
+        KeyError: ユーザー情報が見つからない場合
+        Exception: その他のエラー
+    """
+    if not hasattr(request, 'user'):
+        raise Exception('認証されていません。auth_requiredデコレータを使用してください。')
+    
+    user_id = request.user.get('uid')
+    if not user_id:
+        raise KeyError('ユーザーIDが見つかりません')
+    
+    return user_id

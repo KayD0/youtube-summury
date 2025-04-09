@@ -1,11 +1,18 @@
 import { searchVideos } from "../services/auth-api-service.js";
 import { isAuthenticated } from "../services/firebase.js";
+import { 
+    subscribeToChannel, 
+    unsubscribeFromChannel, 
+    getSubscriptions, 
+    isChannelSubscribed 
+} from "../services/subscription-api-service.js";
 
 // YouTube検索コンポーネント
 class YouTubeSearch extends HTMLElement {
     constructor() {
         super();
         this.videos = [];
+        this.subscriptions = [];
         this.render();
     }
 
@@ -13,7 +20,89 @@ class YouTubeSearch extends HTMLElement {
         // コンポーネントがDOMに接続された後にイベントリスナーを追加
         setTimeout(() => {
             this.setupEventListeners();
+            this.loadSubscriptions();
         }, 0);
+    }
+    
+    // チャンネル登録一覧を読み込む
+    async loadSubscriptions() {
+        if (!isAuthenticated()) {
+            return;
+        }
+        
+        try {
+            const result = await getSubscriptions();
+            this.subscriptions = result.subscriptions || [];
+            
+            // 既存のカードのチャンネル登録ボタンを更新
+            this.updateSubscriptionButtons();
+        } catch (error) {
+            console.error('チャンネル登録一覧の取得に失敗しました:', error);
+        }
+    }
+    
+    // チャンネル登録ボタンの状態を更新
+    updateSubscriptionButtons() {
+        const buttons = this.querySelectorAll('.subscribe-channel-btn');
+        buttons.forEach(button => {
+            const channelId = button.dataset.channelId;
+            const isSubscribed = isChannelSubscribed(channelId, this.subscriptions);
+            
+            this.updateSubscribeButtonState(button, isSubscribed);
+        });
+    }
+    
+    // チャンネル登録ボタンの状態を更新
+    updateSubscribeButtonState(button, isSubscribed) {
+        if (isSubscribed) {
+            button.classList.remove('btn-outline-danger');
+            button.classList.add('btn-danger');
+            button.innerHTML = '<i class="bi bi-bell-fill"></i> 登録済み';
+            button.dataset.subscribed = 'true';
+        } else {
+            button.classList.remove('btn-danger');
+            button.classList.add('btn-outline-danger');
+            button.innerHTML = '<i class="bi bi-bell"></i> チャンネル登録';
+            button.dataset.subscribed = 'false';
+        }
+    }
+    
+    // チャンネル登録/解除を処理
+    async handleSubscription(button) {
+        if (!isAuthenticated()) {
+            alert('チャンネル登録するにはログインが必要です');
+            return;
+        }
+        
+        const channelId = button.dataset.channelId;
+        const isSubscribed = button.dataset.subscribed === 'true';
+        
+        try {
+            button.disabled = true;
+            
+            if (isSubscribed) {
+                // チャンネル登録解除
+                await unsubscribeFromChannel(channelId);
+                this.updateSubscribeButtonState(button, false);
+                
+                // 登録一覧から削除
+                this.subscriptions = this.subscriptions.filter(sub => sub.channel_id !== channelId);
+            } else {
+                // チャンネル登録
+                const result = await subscribeToChannel(channelId);
+                this.updateSubscribeButtonState(button, true);
+                
+                // 登録一覧に追加
+                if (result.subscription) {
+                    this.subscriptions.push(result.subscription);
+                }
+            }
+        } catch (error) {
+            console.error('チャンネル登録処理エラー:', error);
+            alert(`エラー: ${error.message || 'チャンネル登録処理に失敗しました'}`);
+        } finally {
+            button.disabled = false;
+        }
     }
 
     render() {
@@ -109,6 +198,17 @@ class YouTubeSearch extends HTMLElement {
                     const videoId = e.target.dataset.videoId;
                     if (videoId) {
                         this.generateSummaryForVideo(videoId);
+                    }
+                }
+                
+                // チャンネル登録ボタンがクリックされたかチェック
+                if (e.target.classList.contains('subscribe-channel-btn') || e.target.closest('.subscribe-channel-btn')) {
+                    const button = e.target.classList.contains('subscribe-channel-btn') 
+                        ? e.target 
+                        : e.target.closest('.subscribe-channel-btn');
+                    
+                    if (button) {
+                        this.handleSubscription(button);
                     }
                 }
                 
@@ -302,15 +402,32 @@ class YouTubeSearch extends HTMLElement {
     createVideoCard(video) {
         const col = document.createElement('div');
         col.className = 'col';
+        
+        // チャンネルIDを抽出（URLから）
+        // 例: https://www.youtube.com/channel/UC1234567890
+        const channelUrl = `https://www.youtube.com/channel/${video.channel_id || 'unknown'}`;
+        const channelId = video.channel_id || 'unknown';
+        
+        // チャンネルが登録済みかチェック
+        const isSubscribed = isChannelSubscribed(channelId, this.subscriptions);
 
         col.innerHTML = /*html*/`
             <div class="card h-100 shadow-sm">
                 <img src="${video.thumbnail}" class="card-img-top" alt="${video.title}">
                 <div class="card-body">
                     <h5 class="card-title">${this.truncateText(video.title, 60)}</h5>
-                    <p class="card-text text-muted small">
-                        ${video.channel_title} • ${this.formatDate(video.published_at)}
-                    </p>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <a href="${channelUrl}" target="_blank" class="text-decoration-none">
+                            <p class="card-text text-muted small mb-0">
+                                ${video.channel_title} • ${this.formatDate(video.published_at)}
+                            </p>
+                        </a>
+                        <button class="btn btn-sm ${isSubscribed ? 'btn-danger' : 'btn-outline-danger'} subscribe-channel-btn" 
+                                data-channel-id="${channelId}" 
+                                data-subscribed="${isSubscribed ? 'true' : 'false'}">
+                            <i class="bi bi-${isSubscribed ? 'bell-fill' : 'bell'}"></i> ${isSubscribed ? '登録済み' : 'チャンネル登録'}
+                        </button>
+                    </div>
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="btn-group">
                             <a href="${video.url}" target="_blank" class="btn btn-sm btn-outline-primary">YouTubeで視聴</a>

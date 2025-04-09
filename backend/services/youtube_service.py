@@ -184,3 +184,55 @@ class YouTubeService:
             'like_count': statistics.get('likeCount', 'N/A'),
             'comment_count': statistics.get('commentCount', 'N/A')
         }
+    
+    def get_channel_info(self, channel_id):
+        """
+        チャンネルの詳細情報を取得します。
+        
+        Args:
+            channel_id (str): YouTubeチャンネルID
+            
+        Returns:
+            dict: チャンネル情報（タイトル、サムネイル、説明など）
+            None: チャンネルが見つからない場合
+        """
+        try:
+            # チャンネル情報を取得
+            channel_response = self.youtube.channels().list(
+                part='snippet,statistics',
+                id=channel_id
+            ).execute()
+            
+            # チャンネルが見つからない場合
+            if not channel_response.get('items'):
+                return None
+                
+            channel_info = channel_response['items'][0]
+            snippet = channel_info.get('snippet', {})
+            statistics = channel_info.get('statistics', {})
+            
+            # サムネイル画像のURLを取得（利用可能な最高品質）
+            thumbnails = snippet.get('thumbnails', {})
+            thumbnail_url = None
+            for quality in ['high', 'medium', 'default']:
+                if quality in thumbnails:
+                    thumbnail_url = thumbnails[quality]['url']
+                    break
+            
+            return {
+                'id': channel_id,
+                'title': snippet.get('title', '不明なチャンネル'),
+                'description': snippet.get('description', ''),
+                'thumbnail': thumbnail_url,
+                'published_at': snippet.get('publishedAt'),
+                'subscriber_count': statistics.get('subscriberCount', 'N/A'),
+                'video_count': statistics.get('videoCount', 'N/A'),
+                'view_count': statistics.get('viewCount', 'N/A')
+            }
+            
+        except HttpError as e:
+            print(f"YouTube API エラー: {str(e)}")
+            return None
+        except Exception as e:
+            print(f"チャンネル情報取得エラー: {str(e)}")
+            return None
