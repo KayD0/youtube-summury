@@ -19,16 +19,6 @@ class YouTubeSearch extends HTMLElement {
     render() {
         this.innerHTML = /*html*/`
             <style>
-                .expanded-card {
-                    transition: all 0.3s ease-in-out;
-                    order: -1; /* 拡大されたカードを最初に表示 */
-                }
-                
-                .expanded-card .card {
-                    border-color: #28a745;
-                    box-shadow: 0 0.5rem 1rem rgba(40, 167, 69, 0.15) !important;
-                }
-                
                 .summary-container {
                     transition: all 0.3s ease-in-out;
                     border-top: 1px solid rgba(0,0,0,.125);
@@ -128,12 +118,6 @@ class YouTubeSearch extends HTMLElement {
                     if (summaryContainer) {
                         // 要約コンテナを非表示
                         summaryContainer.classList.add('d-none');
-                        
-                        // カードの親要素（col）から全幅クラスを削除
-                        const cardCol = summaryContainer.closest('.col');
-                        if (cardCol) {
-                            cardCol.classList.remove('col-12', 'expanded-card');
-                        }
                     }
                 }
             });
@@ -151,18 +135,7 @@ class YouTubeSearch extends HTMLElement {
         const summaryContainer = this.querySelector(`.summary-container[data-video-id="${videoId}"]`);
         if (!summaryContainer) return;
         
-        // カードの親要素（col）を取得して全幅に拡大
-        const cardCol = summaryContainer.closest('.col');
-        if (cardCol) {
-            // 他のカードの全幅クラスを削除
-            const allCols = this.querySelectorAll('.col');
-            allCols.forEach(col => col.classList.remove('col-12', 'expanded-card'));
-            
-            // このカードを全幅に設定
-            cardCol.classList.add('col-12', 'expanded-card');
-        }
-        
-        // 要約コンテナを表示
+        // 要約コンテナを表示（カードの位置を変更せずに）
         summaryContainer.classList.remove('d-none');
         
         // ローディング表示
