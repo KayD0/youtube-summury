@@ -14,7 +14,7 @@ import { authenticatedFetch } from './auth-api-service.js';
  */
 export async function subscribeToChannel(channelId) {
   try {
-    const response = await authenticatedFetch('/api/subscriptions/', {
+    const response = await authenticatedFetch('/api/subscriptions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -65,7 +65,7 @@ export async function unsubscribeFromChannel(channelId) {
  */
 export async function getSubscriptions() {
   try {
-    const response = await authenticatedFetch('/api/subscriptions/');
+    const response = await authenticatedFetch('/api/subscriptions');
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

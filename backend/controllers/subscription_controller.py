@@ -10,9 +10,9 @@ YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
 youtube_service = YouTubeService(YOUTUBE_API_KEY)
 
 # Blueprintを作成
-subscription_bp = Blueprint('subscription_bp', __name__, url_prefix='/api/subscriptions')
+subscription_bp = Blueprint('subscription_bp', __name__, url_prefix='/api')
 
-@subscription_bp.route('/', methods=['GET'])
+@subscription_bp.route('/subscriptions', methods=['GET'])
 @auth_required
 def get_subscriptions():
     """
@@ -39,7 +39,7 @@ def get_subscriptions():
     except Exception as e:
         return jsonify({'error': f'チャンネル登録の取得に失敗しました: {str(e)}'}), 500
 
-@subscription_bp.route('/', methods=['POST'])
+@subscription_bp.route('/subscriptions', methods=['POST'])
 @auth_required
 def subscribe_channel():
     """
@@ -104,7 +104,7 @@ def subscribe_channel():
         db.session.rollback()
         return jsonify({'error': f'チャンネル登録に失敗しました: {str(e)}'}), 500
 
-@subscription_bp.route('/<channel_id>', methods=['DELETE'])
+@subscription_bp.route('/subscriptions/<channel_id>', methods=['DELETE'])
 @auth_required
 def unsubscribe_channel(channel_id):
     """

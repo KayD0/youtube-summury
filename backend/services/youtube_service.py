@@ -69,6 +69,7 @@ class YouTubeService:
                     'title': item['snippet']['title'],
                     'description': item['snippet']['description'],
                     'thumbnail': item['snippet']['thumbnails']['medium']['url'],
+                    'channel_id': item['snippet']['channelId'],
                     'channel_title': item['snippet']['channelTitle'],
                     'published_at': item['snippet']['publishedAt'],
                     'view_count': video_details.get('view_count', 'N/A'),

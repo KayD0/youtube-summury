@@ -403,13 +403,21 @@ class YouTubeSearch extends HTMLElement {
         const col = document.createElement('div');
         col.className = 'col';
         
-        // チャンネルIDを抽出（URLから）
-        // 例: https://www.youtube.com/channel/UC1234567890
-        const channelUrl = `https://www.youtube.com/channel/${video.channel_id || 'unknown'}`;
-        const channelId = video.channel_id || 'unknown';
+        // チャンネルIDを抽出
+        const channelId = video.channel_id || '';
+        const channelUrl = `https://www.youtube.com/channel/${channelId}`;
         
-        // チャンネルが登録済みかチェック
-        const isSubscribed = isChannelSubscribed(channelId, this.subscriptions);
+        // チャンネルIDが有効な場合のみ登録状態をチェック
+        const isSubscribed = channelId ? isChannelSubscribed(channelId, this.subscriptions) : false;
+
+        // チャンネル登録ボタンのHTMLを生成（チャンネルIDがある場合のみ）
+        const subscribeButtonHtml = channelId ? `
+            <button class="btn btn-sm ${isSubscribed ? 'btn-danger' : 'btn-outline-danger'} subscribe-channel-btn" 
+                    data-channel-id="${channelId}" 
+                    data-subscribed="${isSubscribed ? 'true' : 'false'}">
+                <i class="bi bi-${isSubscribed ? 'bell-fill' : 'bell'}"></i> ${isSubscribed ? '登録済み' : 'チャンネル登録'}
+            </button>
+        ` : '';
 
         col.innerHTML = /*html*/`
             <div class="card h-100 shadow-sm">
@@ -422,11 +430,7 @@ class YouTubeSearch extends HTMLElement {
                                 ${video.channel_title} • ${this.formatDate(video.published_at)}
                             </p>
                         </a>
-                        <button class="btn btn-sm ${isSubscribed ? 'btn-danger' : 'btn-outline-danger'} subscribe-channel-btn" 
-                                data-channel-id="${channelId}" 
-                                data-subscribed="${isSubscribed ? 'true' : 'false'}">
-                            <i class="bi bi-${isSubscribed ? 'bell-fill' : 'bell'}"></i> ${isSubscribed ? '登録済み' : 'チャンネル登録'}
-                        </button>
+                        ${subscribeButtonHtml}
                     </div>
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="btn-group">
