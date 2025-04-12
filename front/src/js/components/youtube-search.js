@@ -36,9 +36,41 @@ class YouTubeSearch extends HTMLElement {
             
             // 既存のカードのチャンネル登録ボタンを更新
             this.updateSubscriptionButtons();
+            
+            // チャンネル選択ドロップダウンを更新
+            this.updateChannelDropdown();
         } catch (error) {
             console.error('チャンネル登録一覧の取得に失敗しました:', error);
         }
+    }
+    
+    // チャンネル選択ドロップダウンを更新
+    updateChannelDropdown() {
+        const channelSelect = this.querySelector('#channel-id');
+        if (!channelSelect) return;
+        
+        // 既存のオプションをクリア（最初の「すべてのチャンネル」オプションは残す）
+        while (channelSelect.options.length > 1) {
+            channelSelect.remove(1);
+        }
+        
+        // 登録チャンネルがない場合は終了
+        if (!this.subscriptions || this.subscriptions.length === 0) {
+            return;
+        }
+        
+        // チャンネルをアルファベット順にソート
+        const sortedChannels = [...this.subscriptions].sort((a, b) => 
+            a.channel_title.localeCompare(b.channel_title)
+        );
+        
+        // 各チャンネルをドロップダウンに追加
+        sortedChannels.forEach(subscription => {
+            const option = document.createElement('option');
+            option.value = subscription.channel_id;
+            option.textContent = subscription.channel_title;
+            channelSelect.appendChild(option);
+        });
     }
     
     // チャンネル登録ボタンの状態を更新
@@ -87,6 +119,9 @@ class YouTubeSearch extends HTMLElement {
                 
                 // 登録一覧から削除
                 this.subscriptions = this.subscriptions.filter(sub => sub.channel_id !== channelId);
+                
+                // チャンネル選択ドロップダウンを更新
+                this.updateChannelDropdown();
             } else {
                 // チャンネル登録
                 const result = await subscribeToChannel(channelId);
@@ -95,6 +130,9 @@ class YouTubeSearch extends HTMLElement {
                 // 登録一覧に追加
                 if (result.subscription) {
                     this.subscriptions.push(result.subscription);
+                    
+                    // チャンネル選択ドロップダウンを更新
+                    this.updateChannelDropdown();
                 }
             }
         } catch (error) {
@@ -132,7 +170,10 @@ class YouTubeSearch extends HTMLElement {
                                 </div>
                                 <div class="col-md-6">
                                     <label for="channel-id" class="form-label">チャンネルID（任意）</label>
-                                    <input type="text" class="form-control" id="channel-id">
+                                    <select class="form-select" id="channel-id">
+                                        <option value="">すべてのチャンネル</option>
+                                        <!-- チャンネル登録一覧がここに挿入されます -->
+                                    </select>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="max-results" class="form-label">最大結果数</label>
