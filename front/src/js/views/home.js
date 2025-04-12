@@ -7,7 +7,7 @@ export default () => /*html*/`
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <h1 class="card-title">YouTubeツール</h1>
+                    <h1 class="card-title">要Tube</h1>
                     <p class="card-text">YouTubeビデオを検索し、AIを使用して要約を生成します</p>
                 </div>
             </div>
