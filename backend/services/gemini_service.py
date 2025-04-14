@@ -58,13 +58,15 @@ class GeminiService:
             print(f"Error getting video details: {str(e)}")
             return None
     
-    def generate_summary(self, video_id, youtube_service, language=None):
+    def generate_summary(self, video_id, youtube_service, language=None, format_type="json"):
         """
         Generate a summary for a YouTube video using Vertex AI Gemini.
         
         Args:
             video_id (str): YouTube video ID
             youtube_service (YouTubeService): Instance of YouTubeService
+            language (str, optional): Language for the summary
+            format_type (str, optional): Format type for the summary ("json" or "markdown")
             
         Returns:
             dict: Summary information
@@ -83,27 +85,70 @@ class GeminiService:
             if not video_details:
                 return {"error": "Could not retrieve video details"}
             
-            # Create a prompt for Gemini
-            prompt = f"""
-            以下のYouTube動画のトランスクリプトに基づいて、簡潔な要約を生成してください。
+            # Create a prompt for Gemini based on format type
+            if format_type == "markdown":
+                prompt = f"""
+                以下のYouTube動画のトランスクリプトに基づいて、Markdown形式で詳細な要約を生成してください。
+                この要約は情報共有や外部への展開に適した形式にしてください。
 
-            - 動画タイトル: {video_details.get('title', '不明')}
-            - 動画ID: {video_id}
+                - 動画タイトル: {video_details.get('title', '不明')}
+                - 動画ID: {video_id}
+                - チャンネル名: {video_details.get('channel_title', '不明')}
+                - 公開日: {video_details.get('published_at', '不明')}
 
-            - トランスクリプト: {transcript}
+                - トランスクリプト: {transcript}
 
-            以下を提供してください：
-            1. 簡潔な要約（2～3文）
-            2. 重要なポイント（3～5箇条書き）
-            3. 主な議論内容
+                以下の構造でMarkdown形式の要約を作成してください：
 
-            以下のJSON形式で回答を記述してください：
-            {{
-                "brief_summary": "...",
-                "key_points": ["...", "...", "..."],
-                "main_topics": ["...", "...", "..."]
-            }}
-            """
+                1. 見出し（# 動画タイトル）
+                2. 概要情報（公開日、チャンネル名、動画URLなど）
+                3. 簡潔な要約（2～3段落）- 動画の主要な内容を簡潔に説明
+                4. 重要なポイント（箇条書き）- 動画から得られる主要な学びや情報
+                5. 詳細な内容（小見出しと説明）- 動画の主要なセクションごとに詳細な説明
+                6. 結論 - 動画の結論や視聴者へのメッセージ
+                7. 関連リソース（もし言及されていれば）
+
+                Markdownの構文を正しく使用してください：
+                - 見出しには # ## ### を適切に使用
+                - 重要な点は **太字** で強調
+                - 引用が必要な場合は > を使用
+                - コードやコマンドは ``` で囲む
+                - 表やリンクも適切に使用
+
+                要約は情報が豊富で、読みやすく、共有しやすいものにしてください。
+                技術的な内容や専門用語がある場合は、簡潔な説明を追加してください。
+                
+                また、以下のJSON形式でメタデータも提供してください：
+                ```json
+                {{
+                    "brief_summary": "...",
+                    "key_points": ["...", "...", "..."],
+                    "main_topics": ["...", "...", "..."],
+                    "markdown_content": "（上記で生成したMarkdown形式の要約全体）"
+                }}
+                ```
+                """
+            else:
+                prompt = f"""
+                以下のYouTube動画のトランスクリプトに基づいて、簡潔な要約を生成してください。
+
+                - 動画タイトル: {video_details.get('title', '不明')}
+                - 動画ID: {video_id}
+
+                - トランスクリプト: {transcript}
+
+                以下を提供してください：
+                1. 簡潔な要約（2～3文）
+                2. 重要なポイント（3～5箇条書き）
+                3. 主な議論内容
+
+                以下のJSON形式で回答を記述してください：
+                {{
+                    "brief_summary": "...",
+                    "key_points": ["...", "...", "..."],
+                    "main_topics": ["...", "...", "..."]
+                }}
+                """
             
             # Prepare request payload
             payload = {
@@ -152,6 +197,10 @@ class GeminiService:
             # Add video details to the response
             summary_data["video_id"] = video_id
             summary_data["video_url"] = f"https://www.youtube.com/watch?v={video_id}"
+            
+            # Add video title to the response
+            if video_details and 'title' in video_details:
+                summary_data["video_title"] = video_details['title']
             
             return summary_data
             

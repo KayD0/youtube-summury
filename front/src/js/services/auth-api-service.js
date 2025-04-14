@@ -124,16 +124,20 @@ export async function searchVideos(params) {
  * YouTubeビデオの要約を生成（認証バージョン）
  * 
  * @param {string} videoId - YouTubeビデオID
+ * @param {string} formatType - 要約のフォーマット（"json"または"markdown"）
  * @returns {Promise<Object>} - 要約データ
  */
-export async function generateVideoSummary(videoId) {
+export async function generateVideoSummary(videoId, formatType = 'json') {
   try {
     const response = await authenticatedFetch('/api/summarize', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ video_id: videoId })
+      body: JSON.stringify({ 
+        video_id: videoId,
+        format_type: formatType
+      })
     });
     
     if (!response.ok) {

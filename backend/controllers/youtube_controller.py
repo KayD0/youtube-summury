@@ -67,6 +67,7 @@ def summarize_video():
     
     JSONボディパラメータ:
     - video_id: YouTubeビデオID（必須）
+    - format_type: 要約のフォーマット（オプション、"json"または"markdown"、デフォルト: "json"）
     
     戻り値:
     - 要約情報を含むJSONレスポンス
@@ -76,14 +77,19 @@ def summarize_video():
     
     # JSONからパラメータを抽出
     video_id = data.get('video_id')
+    format_type = data.get('format_type', 'json')
     
     # video_idパラメータの検証
     if not video_id:
         return jsonify({'error': 'video_idパラメータがありません'}), 400
     
+    # format_typeパラメータの検証
+    if format_type not in ['json', 'markdown']:
+        return jsonify({'error': 'format_typeパラメータは"json"または"markdown"である必要があります'}), 400
+    
     try:
         # Geminiサービスを使用して要約を生成
-        result = gemini_service.generate_summary(video_id, youtube_service)
+        result = gemini_service.generate_summary(video_id, youtube_service, format_type=format_type)
         
         return jsonify(result)
     

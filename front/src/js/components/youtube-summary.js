@@ -1,5 +1,6 @@
 import { generateVideoSummary } from "../services/auth-api-service.js";
 import { isAuthenticated } from "../services/firebase.js";
+import '../components/markdown-preview.js';
 
 // YouTube要約コンポーネント
 class YouTubeSummary extends HTMLElement {
@@ -50,13 +51,34 @@ class YouTubeSummary extends HTMLElement {
 
                 <div id="summary-result" class="mt-4 d-none">
                     <div class="card">
-                        <div class="card-header bg-light">
+                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">ビデオ要約</h5>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-secondary active" id="standard-view-btn">
+                                    <i class="bi bi-list-ul"></i> 標準表示
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="markdown-view-btn">
+                                    <i class="bi bi-markdown"></i> Markdown表示
+                                </button>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <h6 class="card-subtitle mb-3 text-muted">簡単な要約</h6>
-                            <p id="brief-summary" class="card-text"></p>
+                        
+                        <!-- 簡単な要約（常に表示） -->
+                        <div class="card-body pb-0">
+                            <div class="alert alert-light">
+                                <h6 class="card-subtitle mb-2 text-muted">簡単な要約</h6>
+                                <p id="brief-summary" class="card-text"></p>
+                            </div>
                             
+                            <div class="d-flex justify-content-end mb-3">
+                                <a id="video-link-top" href="#" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-youtube"></i> YouTubeで視聴
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- 標準表示 -->
+                        <div class="card-body pt-0" id="standard-view">
                             <h6 class="card-subtitle mb-3 text-muted">重要ポイント</h6>
                             <ul id="key-points" class="list-group list-group-flush mb-3">
                                 <!-- 重要ポイントがここに挿入されます -->
@@ -66,10 +88,11 @@ class YouTubeSummary extends HTMLElement {
                             <div id="main-topics" class="mb-3">
                                 <!-- 主要トピックがバッジとしてここに挿入されます -->
                             </div>
-                            
-                            <a id="video-link" href="#" target="_blank" class="btn btn-outline-primary">
-                                <i class="bi bi-youtube"></i> YouTubeで視聴
-                            </a>
+                        </div>
+                        
+                        <!-- Markdown表示 -->
+                        <div class="card-body pt-0 d-none" id="markdown-view">
+                            <markdown-preview></markdown-preview>
                         </div>
                     </div>
                 </div>
@@ -88,6 +111,40 @@ class YouTubeSummary extends HTMLElement {
                 e.preventDefault();
                 this.generateSummary();
             });
+        }
+        
+        // 表示切り替えボタンのイベントリスナー
+        const standardViewBtn = this.querySelector('#standard-view-btn');
+        const markdownViewBtn = this.querySelector('#markdown-view-btn');
+        
+        if (standardViewBtn && markdownViewBtn) {
+            standardViewBtn.addEventListener('click', () => {
+                this.switchView('standard');
+            });
+            
+            markdownViewBtn.addEventListener('click', () => {
+                this.switchView('markdown');
+            });
+        }
+    }
+    
+    // 表示モードを切り替える
+    switchView(mode) {
+        const standardView = this.querySelector('#standard-view');
+        const markdownView = this.querySelector('#markdown-view');
+        const standardViewBtn = this.querySelector('#standard-view-btn');
+        const markdownViewBtn = this.querySelector('#markdown-view-btn');
+        
+        if (mode === 'standard') {
+            standardView.classList.remove('d-none');
+            markdownView.classList.add('d-none');
+            standardViewBtn.classList.add('active');
+            markdownViewBtn.classList.remove('active');
+        } else {
+            standardView.classList.add('d-none');
+            markdownView.classList.remove('d-none');
+            standardViewBtn.classList.remove('active');
+            markdownViewBtn.classList.add('active');
         }
     }
 
@@ -117,9 +174,15 @@ class YouTubeSummary extends HTMLElement {
         this.setLoadingState(true);
         
         try {
-            // サービスを使用してAPIリクエストを行う
+            // 標準形式の要約を取得
             this.summary = await generateVideoSummary(this.videoId);
+            
+            // Markdown形式の要約も取得
+            this.markdownSummary = await generateVideoSummary(this.videoId, 'markdown');
+            
+            // 要約を表示
             this.displaySummary();
+            this.displayMarkdownSummary();
         } catch (error) {
             console.error('要約生成エラー:', error);
             this.showError(error.message);
@@ -154,7 +217,7 @@ class YouTubeSummary extends HTMLElement {
         const briefSummary = this.querySelector('#brief-summary');
         const keyPoints = this.querySelector('#key-points');
         const mainTopics = this.querySelector('#main-topics');
-        const videoLink = this.querySelector('#video-link');
+        const videoLinkTop = this.querySelector('#video-link-top');
         
         briefSummary.textContent = this.summary.brief_summary || '要約はありません';
         
@@ -192,10 +255,27 @@ class YouTubeSummary extends HTMLElement {
         }
         
         // ビデオリンクを設定
-        videoLink.href = this.summary.video_url || `https://www.youtube.com/watch?v=${this.videoId}`;
+        const videoUrl = this.summary.video_url || `https://www.youtube.com/watch?v=${this.videoId}`;
+        videoLinkTop.href = videoUrl;
+        
+        // 動画タイトルがある場合はツールチップに設定
+        if (this.summary.video_title) {
+            videoLinkTop.title = this.summary.video_title;
+        }
         
         // 要約結果を表示
         summaryResult.classList.remove('d-none');
+    }
+    
+    displayMarkdownSummary() {
+        if (!this.markdownSummary || !this.markdownSummary.markdown_content) return;
+        
+        // Markdownプレビューコンポーネントを取得
+        const markdownPreview = this.querySelector('markdown-preview');
+        if (markdownPreview) {
+            // Markdownコンテンツを設定
+            markdownPreview.content = this.markdownSummary.markdown_content;
+        }
     }
     
     setLoadingState(isLoading) {

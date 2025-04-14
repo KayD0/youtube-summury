@@ -6,6 +6,7 @@ import {
     getSubscriptions, 
     isChannelSubscribed 
 } from "../services/subscription-api-service.js";
+import '../components/markdown-preview.js';
 
 // YouTube検索コンポーネント
 class YouTubeSearch extends HTMLElement {
@@ -261,7 +262,54 @@ class YouTubeSearch extends HTMLElement {
                         summaryContainer.classList.add('d-none');
                     }
                 }
+                
+                // 標準表示ボタンがクリックされたかチェック
+                if (e.target.classList.contains('standard-view-btn') || e.target.closest('.standard-view-btn')) {
+                    const button = e.target.classList.contains('standard-view-btn') 
+                        ? e.target 
+                        : e.target.closest('.standard-view-btn');
+                    
+                    if (button) {
+                        const videoId = button.dataset.videoId;
+                        this.switchView(videoId, 'standard');
+                    }
+                }
+                
+                // Markdown表示ボタンがクリックされたかチェック
+                if (e.target.classList.contains('markdown-view-btn') || e.target.closest('.markdown-view-btn')) {
+                    const button = e.target.classList.contains('markdown-view-btn') 
+                        ? e.target 
+                        : e.target.closest('.markdown-view-btn');
+                    
+                    if (button) {
+                        const videoId = button.dataset.videoId;
+                        this.switchView(videoId, 'markdown');
+                    }
+                }
             });
+        }
+    }
+
+    // 表示モードを切り替える
+    switchView(videoId, mode) {
+        const summaryContainer = this.querySelector(`.summary-container[data-video-id="${videoId}"]`);
+        if (!summaryContainer) return;
+        
+        const standardView = summaryContainer.querySelector('.summary-content');
+        const markdownView = summaryContainer.querySelector('.markdown-content');
+        const standardViewBtn = summaryContainer.querySelector('.standard-view-btn');
+        const markdownViewBtn = summaryContainer.querySelector('.markdown-view-btn');
+        
+        if (mode === 'standard') {
+            standardView.classList.remove('d-none');
+            markdownView.classList.add('d-none');
+            standardViewBtn.classList.add('active');
+            markdownViewBtn.classList.remove('active');
+        } else {
+            standardView.classList.add('d-none');
+            markdownView.classList.remove('d-none');
+            standardViewBtn.classList.remove('active');
+            markdownViewBtn.classList.add('active');
         }
     }
 
@@ -281,22 +329,32 @@ class YouTubeSearch extends HTMLElement {
         
         // ローディング表示
         const loadingElement = summaryContainer.querySelector('.summary-loading');
+        const summaryBrief = summaryContainer.querySelector('.summary-brief');
         const contentElement = summaryContainer.querySelector('.summary-content');
+        const markdownContent = summaryContainer.querySelector('.markdown-content');
         const errorElement = summaryContainer.querySelector('.summary-error');
         
         loadingElement.classList.remove('d-none');
+        summaryBrief.classList.add('d-none');
         contentElement.classList.add('d-none');
+        markdownContent.classList.add('d-none');
         errorElement.classList.add('d-none');
         
         try {
             // auth-api-serviceからインポート
             const { generateVideoSummary } = await import("../services/auth-api-service.js");
             
-            // 要約を生成
+            // 標準形式の要約を生成
             const summary = await generateVideoSummary(videoId);
             
-            // 要約を表示
+            // 標準要約を表示
             this.displaySummaryInCard(summaryContainer, summary);
+            
+            // Markdown形式の要約も生成
+            const markdownSummary = await generateVideoSummary(videoId, 'markdown');
+            
+            // Markdown要約を表示
+            this.displayMarkdownSummary(summaryContainer, markdownSummary);
             
             // 要約コンテナまでスクロール
             summaryContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -312,6 +370,7 @@ class YouTubeSearch extends HTMLElement {
     displaySummaryInCard(container, summary) {
         if (!summary) return;
         
+        const summaryBrief = container.querySelector('.summary-brief');
         const contentElement = container.querySelector('.summary-content');
         const briefSummary = container.querySelector('.brief-summary');
         const keyPoints = container.querySelector('.key-points');
@@ -353,8 +412,28 @@ class YouTubeSearch extends HTMLElement {
             mainTopics.textContent = '主要トピックはありません';
         }
         
+        // 動画タイトルがある場合はツールチップに設定
+        if (summary.video_title) {
+            const titleElement = document.createElement('small');
+            titleElement.className = 'text-muted d-block mb-2';
+            titleElement.textContent = `動画: ${summary.video_title}`;
+            summaryBrief.querySelector('.alert').prepend(titleElement);
+        }
+        
         // コンテンツを表示
+        summaryBrief.classList.remove('d-none');
         contentElement.classList.remove('d-none');
+    }
+    
+    displayMarkdownSummary(container, markdownSummary) {
+        if (!markdownSummary || !markdownSummary.markdown_content) return;
+        
+        // Markdownプレビューコンポーネントを取得
+        const markdownPreview = container.querySelector('markdown-preview');
+        if (markdownPreview) {
+            // Markdownコンテンツを設定
+            markdownPreview.content = markdownSummary.markdown_content;
+        }
     }
 
     async searchVideos() {
@@ -486,7 +565,15 @@ class YouTubeSearch extends HTMLElement {
                 
                 <!-- 要約表示エリア -->
                 <div class="summary-container d-none" data-video-id="${video.id}">
-                    <div class="d-flex justify-content-end mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-secondary active standard-view-btn" data-video-id="${video.id}">
+                                <i class="bi bi-list-ul"></i> 標準表示
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary markdown-view-btn" data-video-id="${video.id}">
+                                <i class="bi bi-markdown"></i> Markdown表示
+                            </button>
+                        </div>
                         <button type="button" class="btn btn-sm btn-outline-secondary close-summary-btn">
                             <i class="bi bi-x"></i> 閉じる
                         </button>
@@ -497,10 +584,17 @@ class YouTubeSearch extends HTMLElement {
                         </div>
                         <span class="ms-2">要約を生成中...</span>
                     </div>
+                    
+                    <!-- 簡単な要約（常に表示） -->
+                    <div class="summary-brief">
+                        <div class="alert alert-light">
+                            <h6 class="card-subtitle mb-2 text-muted">簡単な要約</h6>
+                            <p class="brief-summary card-text"></p>
+                        </div>
+                    </div>
+                    
+                    <!-- 標準表示 -->
                     <div class="summary-content d-none">
-                        <h6 class="card-subtitle mb-2 text-muted">簡単な要約</h6>
-                        <p class="brief-summary card-text"></p>
-                        
                         <h6 class="card-subtitle mb-2 text-muted">重要ポイント</h6>
                         <ul class="key-points list-group list-group-flush mb-2">
                             <!-- 重要ポイントがここに挿入されます -->
@@ -511,6 +605,12 @@ class YouTubeSearch extends HTMLElement {
                             <!-- 主要トピックがバッジとしてここに挿入されます -->
                         </div>
                     </div>
+                    
+                    <!-- Markdown表示 -->
+                    <div class="markdown-content d-none">
+                        <markdown-preview></markdown-preview>
+                    </div>
+                    
                     <div class="summary-error alert alert-danger mt-2 d-none">
                         要約の生成中にエラーが発生しました。
                     </div>
